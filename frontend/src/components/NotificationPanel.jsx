@@ -1,26 +1,42 @@
 import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { notificationService } from '../services/api';
+import { Client } from '@stomp/stompjs';
 
 const NotificationPanel = () => {
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const panelRef = useRef(null);
 
-    const fetchNotifications = async () => {
-        try {
-            const response = await notificationService.getAll();
-            setNotifications(response.data);
-        } catch (error) {
-            console.error("Failed to fetch notifications", error);
-        }
-    };
-
     useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const response = await notificationService.getAll();
+                setNotifications(response.data);
+            } catch (error) {
+                console.error("Failed to fetch notifications", error);
+            }
+        };
+
         fetchNotifications();
-        // Optional: Polling every 30 seconds for new notifications
-        const intervalId = setInterval(fetchNotifications, 30000);
         
+        let stompClient = null;
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            stompClient = new Client({
+                brokerURL: 'ws://localhost:8080/ws',
+                debug: () => {}, // Disable debug logs
+                onConnect: () => {
+                    stompClient.subscribe(`/topic/notifications/${user.email}`, (msg) => {
+                        const newNotification = JSON.parse(msg.body);
+                        setNotifications(prev => [newNotification, ...prev]);
+                    });
+                }
+            });
+            stompClient.activate();
+        }
+
         const handleClickOutside = (event) => {
             if (panelRef.current && !panelRef.current.contains(event.target)) {
                 setIsOpen(false);
@@ -29,8 +45,10 @@ const NotificationPanel = () => {
         document.addEventListener("mousedown", handleClickOutside);
         
         return () => {
-            clearInterval(intervalId);
             document.removeEventListener("mousedown", handleClickOutside);
+            if (stompClient) {
+                stompClient.deactivate();
+            }
         };
     }, []);
 

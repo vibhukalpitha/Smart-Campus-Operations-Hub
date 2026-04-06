@@ -11,12 +11,15 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public List<NotificationDTO> getUserNotifications(String email) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
@@ -35,7 +38,12 @@ public class NotificationService {
                 .message(message)
                 .build();
         
-        return mapToDTO(notificationRepository.save(notification));
+        NotificationDTO dto = mapToDTO(notificationRepository.save(notification));
+        
+        // Broadcast over WebSockets
+        messagingTemplate.convertAndSend("/topic/notifications/" + user.getEmail(), dto);
+        
+        return dto;
     }
 
     public NotificationDTO markAsRead(Long notificationId, String email) {

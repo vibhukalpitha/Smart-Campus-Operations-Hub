@@ -42,6 +42,23 @@ public class User implements UserDetails {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "is_email_verified", columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean emailVerified = false;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "is_mfa_enabled", columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean mfaEnabled = false;
+
+    @Column(name = "mfa_code")
+    private String mfaCode;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import NotificationPanel from '../components/NotificationPanel';
+import Footer from '../components/Footer';
 import { LayoutDashboard, Users, Calendar, Settings, LogOut, Search, Bell } from 'lucide-react';
 
 const Dashboard = () => {
@@ -81,7 +82,7 @@ const Dashboard = () => {
             {/* Main Content */}
             <main className="flex-1 flex flex-col h-screen overflow-hidden z-10">
                 {/* Topbar */}
-                <header className="h-20 bg-white/5 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-8">
+                <header className="h-20 bg-white/5 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-8 relative z-50">
                     <div className="flex items-center bg-white/5 rounded-full px-4 py-2 border border-white/5 w-96 focus-within:bg-white/10 focus-within:border-indigo-500/50 transition-all">
                         <Search className="w-5 h-5 text-indigo-200/50" />
                         <input 
@@ -98,17 +99,17 @@ const Dashboard = () => {
                         
                         <div className="h-8 w-px bg-white/10"></div>
                         
-                        <div className="flex items-center space-x-3 cursor-pointer group">
+                        <Link to="/profile" className="flex items-center space-x-3 cursor-pointer group">
                             <div className="text-right hidden md:block">
                                 <p className="text-sm font-semibold text-white group-hover:text-indigo-200 transition-colors">{user.firstName} {user.lastName}</p>
                                 <p className="text-xs text-indigo-300/70 capitalize">{user.role}</p>
                             </div>
                             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-indigo-500/20">
                                 <div className="w-full h-full bg-[#0a0f1c] rounded-full flex items-center justify-center text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
-                                    {user.firstName[0]}{user.lastName[0]}
+                                    {user.firstName?.[0] || 'U'}{user.lastName?.[0] || ''}
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     </div>
                 </header>
 
@@ -163,6 +164,9 @@ const Dashboard = () => {
                                 </p>
                             </div>
                         </div>
+                    </div>
+                    <div className="shrink-0">
+                        <Footer />
                     </div>
                 </div>
             </main>

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
 import { LogIn, UserPlus, Mail, Lock, User, Sparkles } from 'lucide-react';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const LoginPage = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -26,20 +28,32 @@ const LoginPage = () => {
         
         try {
             let response;
-            if (isLogin) {
+            if (!isLogin) {
+                response = await authService.register(formData);
+                setError(response.data.message); // This will render as a success-looking text in the error box
+                setIsLogin(true);
+                return;
+            } else {
                 response = await authService.login({
                     email: formData.email,
                     password: formData.password
                 });
-            } else {
-                response = await authService.register(formData);
             }
             
+            if (response.data.requiresTwoFactor) {
+                navigate('/verify-2fa', { state: { email: response.data.email } });
+                return;
+            }
+
             const { token, ...user } = response.data;
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             
-            navigate('/dashboard');
+            if (user.role === 'ADMIN') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             console.error(err);
             if (err.response && err.response.data) {
@@ -58,7 +72,9 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0a0f1c] relative overflow-hidden font-sans">
+        <div className="flex flex-col min-h-screen bg-[#0a0f1c] font-sans">
+            <Header />
+            <div className="flex-1 flex items-center justify-center relative overflow-hidden">
             {/* Animated Background Gradients */}
             <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-blue-600/30 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-10000"></div>
             <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-indigo-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-7000"></div>
@@ -200,6 +216,8 @@ const LoginPage = () => {
                     </div>
                 </div>
             </div>
+            </div>
+            <Footer />
         </div>
     );
 };

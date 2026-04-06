@@ -45,4 +45,10 @@ export const notificationService = {
     delete: (id) => api.delete(`/notifications/${id}`)
 };
 
+export const userService = {
+    getAllUsers: () => api.get('/users'),
+    updateUserRole: (id, role) => api.put(`/users/${id}/role`, { role }),
+    deleteUser: (id) => api.delete(`/users/${id}`)
+};
+
 export default api;
