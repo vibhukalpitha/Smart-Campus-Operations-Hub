@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Footer from './Footer';
-import { Shield, Users as UsersIcon, Package, Menu, X as XClose, ShieldAlert } from 'lucide-react';
+import { Shield, Users as UsersIcon, Package, Menu, X as XClose, ShieldAlert, Calendar } from 'lucide-react';
 
 const AdminLayout = ({ children, activeSection = 'users' }) => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -97,6 +97,27 @@ const AdminLayout = ({ children, activeSection = 'users' }) => {
                             <div className="text-left">
                                 <p className="font-semibold text-sm">Facilities & Assets</p>
                                 <p className="text-xs text-white/50">Manage resources</p>
+                            </div>
+                        </Link>
+
+                        {/* Booking Management */}
+                        <Link
+                            to="/admin/bookings"
+                            onClick={() => {
+                                if (window.innerWidth < 1024) {
+                                    setSidebarOpen(false);
+                                }
+                            }}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
+                                activeSection === 'bookings' 
+                                    ? 'bg-gradient-to-r from-indigo-600/40 to-blue-600/40 text-white border border-indigo-500/30' 
+                                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <Calendar className="w-5 h-5" />
+                            <div className="text-left">
+                                <p className="font-semibold text-sm">Booking Management</p>
+                                <p className="text-xs text-white/50">Review requests</p>
                             </div>
                         </Link>
 
