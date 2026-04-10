@@ -9,6 +9,10 @@ import Verify2FAPage from './pages/Verify2FAPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import ResourceListPage from './pages/ResourceListPage';
+import BookingFormPage from './pages/BookingFormPage';
+import MyBookingsPage from './pages/MyBookingsPage';
+import AdminBookingsPage from './pages/AdminBookingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomeRedirect from './components/HomeRedirect';
 
@@ -30,6 +34,9 @@ function App() {
           {/* Protected User Routes */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/resources" element={<ResourceListPage />} />
+          <Route path="/book/:id" element={<BookingFormPage />} />
+          <Route path="/my-bookings" element={<MyBookingsPage />} />
 
           {/* Module A: Facilities & Assets - Admin Only Routes */}
           <Route
@@ -53,6 +60,14 @@ function App() {
             element={
               <ProtectedRoute requireAdmin={true}>
                 <ResourceFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/bookings"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminBookingsPage />
               </ProtectedRoute>
             }
           />

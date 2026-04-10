@@ -61,4 +61,19 @@ export const userService = {
     deleteUser: (id) => api.delete(`/users/${id}`)
 };
 
+export const bookingService = {
+    create: (data) => api.post('/bookings', data),
+    getAll: () => api.get('/bookings'),
+    updateStatus: (id, status, reason) => api.put(`/bookings/${id}/status`, { status, reason }),
+    cancel: (id) => api.delete(`/bookings/${id}`)
+};
+
+export const resourceService = {
+    getAll: () => api.get('/resources'),
+    getById: (id) => api.get(`/resources/${id}`),
+    create: (data) => api.post('/admin/resources', data),
+    update: (id, data) => api.put(`/admin/resources/${id}`, data),
+    delete: (id) => api.delete(`/admin/resources/${id}`)
+};
+
 export default api;
