@@ -23,4 +23,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime
     );
+
+    @Query("SELECT COALESCE(SUM(b.expectedAttendees), 0) FROM Booking b " +
+           "WHERE b.resource.id = :resourceId " +
+           "AND b.status = com.smartcampus.operationshub.entity.BookingStatus.APPROVED")
+    Long sumApprovedAttendeesByResourceId(@Param("resourceId") Long resourceId);
 }

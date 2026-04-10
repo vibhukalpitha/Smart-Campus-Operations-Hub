@@ -22,4 +22,6 @@ public class ResourceDTO {
     private LocalTime availableFrom;
     private LocalTime availableTo;
     private LocalDateTime createdAt;
+    private Integer bookedCount;
+    private Integer availableSeats;
 }
