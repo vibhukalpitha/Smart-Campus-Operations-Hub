@@ -28,9 +28,20 @@ const NotificationPanel = () => {
                 brokerURL: 'ws://localhost:8080/ws',
                 debug: () => {}, // Disable debug logs
                 onConnect: () => {
+                    // Subscribe to user-specific notifications
                     stompClient.subscribe(`/topic/notifications/${user.email}`, (msg) => {
                         const newNotification = JSON.parse(msg.body);
                         setNotifications(prev => [newNotification, ...prev]);
+                    });
+                    
+                    // Subscribe to global system notifications
+                    stompClient.subscribe('/topic/notifications', (msg) => {
+                        const newNotification = JSON.parse(msg.body);
+                        setNotifications(prev => {
+                            // Avoid duplicates if same notification sent to both
+                            if (prev.find(n => n.id === newNotification.id)) return prev;
+                            return [newNotification, ...prev];
+                        });
                     });
                 }
             });

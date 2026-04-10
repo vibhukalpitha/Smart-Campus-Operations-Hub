@@ -2,7 +2,6 @@ package com.smartcampus.operationshub.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,22 +16,25 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false)
     private String message;
 
-    @Column(name = "is_read")
-    @Builder.Default
-    private boolean isRead = false;
+    @Column(nullable = false)
+    private String type; // e.g., INFO, ALERT, EVENT, MAINTENANCE
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
-    
+
+    @Column(name = "is_read", columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean read = false;
+
+    // Optional: user specific notifications. Null means it's a system-wide notification.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 }

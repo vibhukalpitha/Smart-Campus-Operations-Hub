@@ -1,42 +1,51 @@
 package com.smartcampus.operationshub.controller;
 
-import com.smartcampus.operationshub.dto.NotificationCreateRequest;
-import com.smartcampus.operationshub.dto.NotificationDTO;
+import com.smartcampus.operationshub.entity.Notification;
+import com.smartcampus.operationshub.entity.User;
 import com.smartcampus.operationshub.service.NotificationService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class NotificationController {
 
     private final NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<List<NotificationDTO>> getUserNotifications(Authentication authentication) {
-        return ResponseEntity.ok(notificationService.getUserNotifications(authentication.getName()));
+    public ResponseEntity<List<Notification>> getAll(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(notificationService.getNotificationsForUser(user.getEmail()));
     }
 
     @PostMapping
-    public ResponseEntity<NotificationDTO> createNotification(@Valid @RequestBody NotificationCreateRequest request) {
+    public ResponseEntity<Notification> create(@RequestBody Map<String, String> payload) {
+        // Typically only admins should call this to broadcast
         return ResponseEntity.ok(notificationService.createNotification(
-                request.getUserId(), request.getTitle(), request.getMessage()));
+                payload.get("title"),
+                payload.get("message"),
+                payload.get("type"),
+                payload.get("userEmail")
+        ));
     }
 
     @PutMapping("/{id}/read")
-    public ResponseEntity<NotificationDTO> markAsRead(@PathVariable("id") Long id, Authentication authentication) {
-        return ResponseEntity.ok(notificationService.markAsRead(id, authentication.getName()));
+    public ResponseEntity<Void> markAsRead(@PathVariable Long id) {
+        notificationService.markAsRead(id);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteNotification(@PathVariable("id") Long id, Authentication authentication) {
-        notificationService.deleteNotification(id, authentication.getName());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        notificationService.deleteNotification(id);
+        return ResponseEntity.ok().build();
     }
 }

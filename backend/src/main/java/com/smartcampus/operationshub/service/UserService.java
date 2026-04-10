@@ -65,9 +65,10 @@ public class UserService {
         
         // Broadcast WebSocket Real-Time Notification
         notificationService.createNotification(
-                user.getId(),
                 "Security Update",
-                alertMessage
+                alertMessage,
+                "SECURITY",
+                user.getEmail()
         );
 
         return mapToDto(user);

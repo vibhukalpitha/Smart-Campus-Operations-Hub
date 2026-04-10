@@ -1,5 +1,6 @@
 import { ShieldAlert } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import NotificationPanel from './NotificationPanel';
 
 const Header = () => {
     const userStr = localStorage.getItem('user');
@@ -17,6 +18,7 @@ const Header = () => {
             </Link>
             
             <div className="flex space-x-6 items-center">
+                {user && <NotificationPanel />}
                 {!user ? (
                     <Link to="/login" className="text-sm font-semibold text-indigo-300 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 shadow-lg relative z-20">
                         Sign In Portal

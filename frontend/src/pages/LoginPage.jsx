@@ -11,8 +11,11 @@ const LoginPage = () => {
         email: '',
         password: '',
         firstName: '',
-        lastName: ''
+        lastName: '',
+        dateOfBirth: '',
+        gender: ''
     });
+    const [profilePicture, setProfilePicture] = useState(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -29,8 +32,23 @@ const LoginPage = () => {
         try {
             let response;
             if (!isLogin) {
-                response = await authService.register(formData);
-                setError(response.data.message); // This will render as a success-looking text in the error box
+                const data = new FormData();
+                const requestBlob = new Blob([JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    dateOfBirth: formData.dateOfBirth,
+                    gender: formData.gender
+                })], { type: "application/json" });
+                
+                data.append('request', requestBlob);
+                if (profilePicture) {
+                    data.append('profilePicture', profilePicture);
+                }
+                
+                response = await authService.register(data);
+                setError(response.data.message); 
                 setIsLogin(true);
                 return;
             } else {
@@ -142,6 +160,51 @@ const LoginPage = () => {
                                 </div>
                             )}
                         </div>
+
+                        {!isLogin && (
+                            <div className="space-y-5 animate-fade-in">
+                                {/* DOB and Gender */}
+                                <div className="flex space-x-4">
+                                    <div className="flex-1 relative group">
+                                        <label className="text-xs text-indigo-300/70 ml-1 mb-1 block">Date of Birth</label>
+                                        <input
+                                            name="dateOfBirth"
+                                            type="date"
+                                            required={!isLogin}
+                                            className="block w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/10 transition-all cursor-pointer"
+                                            value={formData.dateOfBirth}
+                                            onChange={handleInputChange}
+                                        />
+                                    </div>
+                                    <div className="flex-1 relative group">
+                                        <label className="text-xs text-indigo-300/70 ml-1 mb-1 block">Gender</label>
+                                        <select
+                                            name="gender"
+                                            required={!isLogin}
+                                            className="block w-full px-4 py-3 bg-[#1e2538] border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
+                                            value={formData.gender}
+                                            onChange={handleInputChange}
+                                        >
+                                            <option value="">Select Gender</option>
+                                            <option value="MALE">Male</option>
+                                            <option value="FEMALE">Female</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Profile Picture */}
+                                <div className="relative group">
+                                    <label className="text-xs text-indigo-300/70 ml-1 mb-1 block">Profile Picture</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="block w-full text-sm text-indigo-200/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500/20 file:text-indigo-300 hover:file:bg-indigo-500/30 transition-all cursor-pointer"
+                                        onChange={(e) => setProfilePicture(e.target.files[0])}
+                                    />
+                                </div>
+                            </div>
+                        )}
                         
                         {/* Email Field */}
                         <div className="relative group">

@@ -35,7 +35,17 @@ api.interceptors.response.use(
 
 export const authService = {
     login: (credentials) => api.post('/auth/login', credentials),
-    register: (userData) => api.post('/auth/register', userData)
+    register: (userData) => {
+        // Check if userData is FormData
+        if (userData instanceof FormData) {
+            return api.post('/auth/register', userData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        }
+        return api.post('/auth/register', userData);
+    }
 };
 
 export const notificationService = {
