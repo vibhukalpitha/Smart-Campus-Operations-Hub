@@ -6,6 +6,7 @@ import com.smartcampus.operationshub.entity.Resource;
 import com.smartcampus.operationshub.entity.ResourceStatus;
 import com.smartcampus.operationshub.entity.ResourceType;
 import com.smartcampus.operationshub.exception.ResourceNotFoundException;
+import com.smartcampus.operationshub.repository.BookingRepository;
 import com.smartcampus.operationshub.repository.ResourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
+    private final BookingRepository bookingRepository;
 
     /**
      * Create a new resource
@@ -137,6 +139,8 @@ public class ResourceService {
      * Map Resource entity to ResourceDTO
      */
     private ResourceDTO mapToDTO(Resource resource) {
+        long booked = bookingRepository.sumApprovedAttendeesByResourceId(resource.getId());
+        int available = Math.max(0, resource.getCapacity() - (int) booked);
         return ResourceDTO.builder()
                 .id(resource.getId())
                 .name(resource.getName())
@@ -147,6 +151,8 @@ public class ResourceService {
                 .availableFrom(resource.getAvailableFrom())
                 .availableTo(resource.getAvailableTo())
                 .createdAt(resource.getCreatedAt())
+                .bookedCount((int) booked)
+                .availableSeats(available)
                 .build();
     }
 }
