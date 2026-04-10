@@ -2,6 +2,7 @@ package com.smartcampus.operationshub.dto;
 
 import com.smartcampus.operationshub.entity.ResourceStatus;
 import com.smartcampus.operationshub.entity.ResourceType;
+import com.smartcampus.operationshub.validator.ValidAvailabilityTime;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,7 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ValidAvailabilityTime(message = "availableTo must be after availableFrom")
 public class ResourceCreateRequest {
 
     @NotBlank(message = "Resource name cannot be blank")

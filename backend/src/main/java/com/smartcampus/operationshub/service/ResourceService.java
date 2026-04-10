@@ -27,6 +27,9 @@ public class ResourceService {
      * Create a new resource
      */
     public ResourceDTO createResource(ResourceCreateRequest request) {
+        // Validate availability time range
+        validateAvailabilityTime(request.getAvailableFrom(), request.getAvailableTo());
+
         Resource resource = Resource.builder()
                 .name(request.getName())
                 .type(request.getType())
@@ -39,6 +42,17 @@ public class ResourceService {
 
         Resource savedResource = resourceRepository.save(resource);
         return mapToDTO(savedResource);
+    }
+
+    /**
+     * Validate that availableFrom is before availableTo
+     */
+    private void validateAvailabilityTime(java.time.LocalTime availableFrom, java.time.LocalTime availableTo) {
+        if (availableFrom != null && availableTo != null) {
+            if (!availableFrom.isBefore(availableTo)) {
+                throw new IllegalArgumentException("Invalid availability time range: availableTo must be after availableFrom");
+            }
+        }
     }
 
     /**
@@ -65,6 +79,9 @@ public class ResourceService {
      * Update an existing resource
      */
     public ResourceDTO updateResource(Long id, ResourceCreateRequest request) {
+        // Validate availability time range
+        validateAvailabilityTime(request.getAvailableFrom(), request.getAvailableTo());
+
         Resource resource = resourceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource not found with ID: " + id));
 
