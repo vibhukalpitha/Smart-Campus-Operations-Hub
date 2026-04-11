@@ -51,4 +51,72 @@ export const userService = {
     deleteUser: (id) => api.delete(`/users/${id}`)
 };
 
+export const resourceService = {
+    // Legacy aliases used by existing pages
+    getAll: () => api.get('/resources'),
+    getById: (id) => api.get(`/resources/${id}`),
+    create: (data) => api.post('/resources', data),
+    update: (id, data) => api.put(`/resources/${id}`, data),
+    remove: (id) => api.delete(`/resources/${id}`),
+
+    /**
+     * Get all resources
+     */
+    getAllResources: () => api.get('/resources'),
+
+    /**
+     * Get resource by ID
+     */
+    getResourceById: (id) => api.get(`/resources/${id}`),
+
+    /**
+     * Create a new resource
+     */
+    createResource: (data) => api.post('/resources', data),
+
+    /**
+     * Update an existing resource
+     */
+    updateResource: (id, data) => api.put(`/resources/${id}`, data),
+
+    /**
+     * Delete a resource
+     */
+    deleteResource: (id) => api.delete(`/resources/${id}`),
+
+    /**
+     * Search resources with combined filters
+     * Parameters are automatically sent only if they have values
+     */
+    searchResources: async (filters = {}) => {
+        // Build clean params object - only include non-null values
+        const params = Object.fromEntries(
+            Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined && value !== '')
+        );
+        return api.get('/resources/search', { params });
+    },
+
+    /**
+     * Get resources by type
+     */
+    getResourcesByType: (type) => api.get(`/resources/type/${type}`),
+
+    /**
+     * Get resources by location
+     */
+    getResourcesByLocation: (location) => api.get(`/resources/location/${location}`),
+
+    /**
+     * Get all active resources
+     */
+    getActiveResources: () => api.get('/resources/active')
+};
+
+export const bookingService = {
+    getAll: () => api.get('/bookings'),
+    create: (data) => api.post('/bookings', data),
+    updateStatus: (id, status, reason) => api.put(`/bookings/${id}/status`, { status, reason }),
+    cancel: (id) => api.delete(`/bookings/${id}`)
+};
+
 export default api;
