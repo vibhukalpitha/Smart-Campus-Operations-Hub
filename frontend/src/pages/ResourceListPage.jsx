@@ -3,38 +3,87 @@ import { useNavigate } from 'react-router-dom';
 import { resourceService } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { MapPin, Users, Info, Calendar, Search, Filter, CheckCircle, XCircle } from 'lucide-react';
+import { MapPin, Users, Info, Calendar, Search, Filter, CheckCircle, XCircle, X } from 'lucide-react';
 
 const ResourceListPage = () => {
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('ALL');
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    // Combined filter states
+    const [filters, setFilters] = useState({
+        searchTerm: '',
+        type: null,
+        minCapacity: null,
+        location: null,
+        status: 'ACTIVE'
+    });
+
+    const [locations, setLocations] = useState([]);
+    const [types] = useState(['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'PROJECTOR', 'CAMERA', 'EQUIPMENT']);
 
     useEffect(() => {
         fetchResources();
-    }, []);
+    }, [filters]);
 
     const fetchResources = async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const response = await resourceService.getAll();
-            setResources(response.data);
-        } catch (error) {
-            console.error("Failed to fetch resources", error);
+            // Build params object with only non-null/non-empty values
+            const params = {};
+            if (filters.type) params.type = filters.type;
+            if (filters.minCapacity) params.minCapacity = parseInt(filters.minCapacity);
+            if (filters.location) params.location = filters.location;
+            if (filters.status) params.status = filters.status;
+
+            // Use backend search endpoint for combined filtering
+            const response = filters.type || filters.minCapacity || filters.location 
+                ? await resourceService.searchResources(params)
+                : await resourceService.getAllResources();
+            
+            setResources(response.data || response);
+            
+            // Extract unique locations for dropdown
+            const uniqueLocations = [...new Set((response.data || response).map(r => r.location))];
+            setLocations(uniqueLocations.sort());
+        } catch (err) {
+            console.error("Failed to fetch resources", err);
+            setError("Failed to load resources. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
+    // Client-side search filtering (for name search)
     const filteredResources = resources.filter(res => {
-        const matchesSearch = res.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            res.location.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = filterType === 'ALL' || res.type === filterType;
-        return matchesSearch && matchesFilter;
+        if (!filters.searchTerm) return true;
+        return (
+            res.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+            res.location.toLowerCase().includes(filters.searchTerm.toLowerCase())
+        );
     });
 
-    const types = ['ALL', ...new Set(resources.map(r => r.type))];
+    const handleFilterChange = (filterName, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [filterName]: value === '' ? null : value
+        }));
+    };
+
+    const resetFilters = () => {
+        setFilters({
+            searchTerm: '',
+            type: null,
+            minCapacity: null,
+            location: null,
+            status: 'ACTIVE'
+        });
+    };
+
+    const activeFilterCount = Object.values(filters).filter(v => v).length - (filters.status ? 0 : 1);
+    const formatType = (type) => type.replace(/_/g, ' ');
 
     const getCapacityColor = (availableSeats, capacity) => {
         if (capacity == null || availableSeats == null) return 'from-gray-500 to-gray-400';
@@ -63,46 +112,118 @@ const ResourceListPage = () => {
                 <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
                 <div className="relative z-10">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-6">
                         <div>
                             <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
                                 Campus Resources
                             </h2>
                             <p className="text-blue-200/50 mt-2">Browse and book facilities for your needs</p>
                         </div>
+                        {activeFilterCount > 0 && (
+                            <button
+                                onClick={resetFilters}
+                                className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm font-medium transition-colors flex items-center gap-2"
+                            >
+                                <X className="w-4 h-4" />
+                                Clear Filters ({activeFilterCount})
+                            </button>
+                        )}
+                    </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="relative group">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-blue-400 transition-colors" />
+                    {/* Filter Section */}
+                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6 mb-8">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Filter className="w-5 h-5 text-blue-400" />
+                            <h3 className="font-semibold text-white">Filters</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                            {/* Search */}
+                            <div>
+                                <label className="block text-xs font-medium text-blue-300 mb-2">Search</label>
                                 <input
                                     type="text"
-                                    placeholder="Search resources..."
-                                    className="bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full sm:w-64 transition-all"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Resource name..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                    value={filters.searchTerm}
+                                    onChange={(e) => handleFilterChange('searchTerm', e.target.value)}
                                 />
                             </div>
-                            <div className="relative group">
-                                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 transition-colors" />
+
+                            {/* Type Filter */}
+                            <div>
+                                <label className="block text-xs font-medium text-blue-300 mb-2">Type</label>
                                 <select
-                                    className="bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-8 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
-                                    value={filterType}
-                                    onChange={(e) => setFilterType(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer [&_option]:bg-slate-900"
+                                    value={filters.type || ''}
+                                    onChange={(e) => handleFilterChange('type', e.target.value)}
                                 >
-                                    {types.map(t => <option key={t} value={t} className="bg-[#1e2538]">{t}</option>)}
+                                    <option value="">All Types</option>
+                                    {types.map(t => (
+                                        <option key={t} value={t}>{formatType(t)}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Min Capacity Filter */}
+                            <div>
+                                <label className="block text-xs font-medium text-blue-300 mb-2">Min Capacity</label>
+                                <input
+                                    type="number"
+                                    placeholder="e.g., 30"
+                                    min="1"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                    value={filters.minCapacity || ''}
+                                    onChange={(e) => handleFilterChange('minCapacity', e.target.value)}
+                                />
+                            </div>
+
+                            {/* Location Filter */}
+                            <div>
+                                <label className="block text-xs font-medium text-blue-300 mb-2">Location</label>
+                                <select
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer [&_option]:bg-slate-900"
+                                    value={filters.location || ''}
+                                    onChange={(e) => handleFilterChange('location', e.target.value)}
+                                >
+                                    <option value="">All Locations</option>
+                                    {locations.map(loc => (
+                                        <option key={loc} value={loc}>{loc}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Status Filter */}
+                            <div>
+                                <label className="block text-xs font-medium text-blue-300 mb-2">Status</label>
+                                <select
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer [&_option]:bg-slate-900"
+                                    value={filters.status || 'ACTIVE'}
+                                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                                >
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="OUT_OF_SERVICE">Out of Service</option>
+                                    <option value="">All Statuses</option>
                                 </select>
                             </div>
                         </div>
                     </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg text-red-200 mb-6">
+                            {error}
+                        </div>
+                    )}
 
                     {loading ? (
                         <div className="flex justify-center py-20">
                             <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
                         </div>
                     ) : filteredResources.length === 0 ? (
-                        <div className="text-center py-20 bg-white/5 border border-white/10 rounded-3xl">
-                            <Info className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                            <p className="text-white/40 font-medium">No resources found matching your criteria</p>
+                        <div className="text-center py-20">
+                            <Info className="w-12 h-12 text-blue-300/50 mx-auto mb-4" />
+                            <p className="text-blue-200/60">No resources found matching your filters.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

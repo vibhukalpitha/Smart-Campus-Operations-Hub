@@ -69,12 +69,18 @@ const resourceService = {
   },
 
   /**
-   * Search resources with filters
+   * Search resources with combined filters
+   * Parameters are automatically sent only if they have values
    */
-  searchResources: async (params) => {
+  searchResources: async (filters = {}) => {
     try {
+      // Build clean params object - only include non-null values
+      const params = Object.fromEntries(
+        Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined && value !== '')
+      );
+
       const response = await axios.get(`${API_BASE_URL}/search`, {
-        params: params,
+        params: params
       });
       return response.data;
     } catch (error) {
