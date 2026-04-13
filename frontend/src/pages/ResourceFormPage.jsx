@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import resourceService from '../services/resourceService';
+import { resourceService } from '../services/api';
 import AdminLayout from '../components/AdminLayout';
 import { ArrowLeft, Save, Loader } from 'lucide-react';
 
@@ -33,7 +33,8 @@ const ResourceFormPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await resourceService.getResourceById(id);
+      const response = await resourceService.getResourceById(id);
+      const data = response.data;
       setFormData({
         name: data.name || '',
         type: data.type || '',

@@ -32,60 +32,16 @@ public class ResourceController {
     }
 
     /**
-     * Get all resources
-     * GET /api/resources
+     * Get resources with optional filters
+     * GET /api/resources?type=&minCapacity=&location=&status=
      */
     @GetMapping
-    public ResponseEntity<List<ResourceDTO>> getAllResources() {
-        List<ResourceDTO> resources = resourceService.getAllResources();
-        return ResponseEntity.ok(resources);
-    }
-
-    /**
-     * Search resources with query parameters
-     * GET /api/resources/search?type=LECTURE_HALL&minCapacity=30&location=Building A&status=ACTIVE
-     * NOTE: This must be BEFORE /{id} to prevent Spring from matching 'search' as an ID
-     */
-    @GetMapping("/search")
-    public ResponseEntity<List<ResourceDTO>> searchResources(
+    public ResponseEntity<List<ResourceDTO>> getResources(
             @RequestParam(required = false) ResourceType type,
             @RequestParam(required = false) Integer minCapacity,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) ResourceStatus status) {
         List<ResourceDTO> resources = resourceService.searchResources(type, minCapacity, location, status);
-        return ResponseEntity.ok(resources);
-    }
-
-    /**
-     * Get resources by type
-     * GET /api/resources/type/{type}
-     * NOTE: This must be BEFORE /{id} to prevent Spring from matching 'type/{type}' as an ID
-     */
-    @GetMapping("/type/{type}")
-    public ResponseEntity<List<ResourceDTO>> getResourcesByType(@PathVariable("type") ResourceType type) {
-        List<ResourceDTO> resources = resourceService.getResourcesByType(type);
-        return ResponseEntity.ok(resources);
-    }
-
-    /**
-     * Get resources by location
-     * GET /api/resources/location/{location}
-     * NOTE: This must be BEFORE /{id} to prevent Spring from matching 'location/{location}' as an ID
-     */
-    @GetMapping("/location/{location}")
-    public ResponseEntity<List<ResourceDTO>> getResourcesByLocation(@PathVariable("location") String location) {
-        List<ResourceDTO> resources = resourceService.getResourcesByLocation(location);
-        return ResponseEntity.ok(resources);
-    }
-
-    /**
-     * Get all active resources
-     * GET /api/resources/active
-     * NOTE: This must be BEFORE /{id} to prevent Spring from matching 'active' as an ID
-     */
-    @GetMapping("/active")
-    public ResponseEntity<List<ResourceDTO>> getActiveResources() {
-        List<ResourceDTO> resources = resourceService.getActiveResources();
         return ResponseEntity.ok(resources);
     }
 
