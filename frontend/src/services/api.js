@@ -93,23 +93,23 @@ export const resourceService = {
         const params = Object.fromEntries(
             Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined && value !== '')
         );
-        return api.get('/resources/search', { params });
+        return api.get('/resources', { params });
     },
 
     /**
      * Get resources by type
      */
-    getResourcesByType: (type) => api.get(`/resources/type/${type}`),
+    getResourcesByType: (type) => api.get('/resources', { params: { type } }),
 
     /**
      * Get resources by location
      */
-    getResourcesByLocation: (location) => api.get(`/resources/location/${location}`),
+    getResourcesByLocation: (location) => api.get('/resources', { params: { location } }),
 
     /**
      * Get all active resources
      */
-    getActiveResources: () => api.get('/resources/active')
+    getActiveResources: () => api.get('/resources', { params: { status: 'ACTIVE' } })
 };
 
 export const bookingService = {

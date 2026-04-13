@@ -38,8 +38,12 @@ const ResourceListPage = () => {
             if (filters.location) params.location = filters.location;
             if (filters.status) params.status = filters.status;
 
+            const hasServerFilters = Boolean(
+                filters.type || filters.minCapacity || filters.location || filters.status
+            );
+
             // Use backend search endpoint for combined filtering
-            const response = filters.type || filters.minCapacity || filters.location 
+            const response = hasServerFilters
                 ? await resourceService.searchResources(params)
                 : await resourceService.getAllResources();
             
