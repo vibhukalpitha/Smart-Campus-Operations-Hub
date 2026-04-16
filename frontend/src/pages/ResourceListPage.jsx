@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { resourceService } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { MapPin, Users, Info, Calendar, Search, Filter, CheckCircle, XCircle, X } from 'lucide-react';
+import { MapPin, Users, Info, Calendar, Clock3, Search, Filter, CheckCircle, XCircle, X } from 'lucide-react';
 
 const ResourceListPage = () => {
     const [resources, setResources] = useState([]);
@@ -20,12 +20,16 @@ const ResourceListPage = () => {
         status: 'ACTIVE'
     });
 
-    const [locations, setLocations] = useState([]);
+    const [sort, setSort] = useState('name,asc');
+    const [page, setPage] = useState(0);
+    const [pageSize] = useState(9);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalElements, setTotalElements] = useState(0);
     const [types] = useState(['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'PROJECTOR', 'CAMERA', 'EQUIPMENT']);
 
     useEffect(() => {
         fetchResources();
-    }, [filters]);
+    }, [filters, page, sort]);
 
     const fetchResources = async () => {
         setLoading(true);
@@ -33,25 +37,27 @@ const ResourceListPage = () => {
         try {
             // Build params object with only non-null/non-empty values
             const params = {};
+            if (filters.searchTerm) params.name = filters.searchTerm;
             if (filters.type) params.type = filters.type;
             if (filters.minCapacity) params.minCapacity = parseInt(filters.minCapacity);
             if (filters.location) params.location = filters.location;
             if (filters.status) params.status = filters.status;
 
-            const hasServerFilters = Boolean(
-                filters.type || filters.minCapacity || filters.location || filters.status
-            );
+            const paging = { page, size: pageSize, sort };
 
-            // Use backend search endpoint for combined filtering
-            const response = hasServerFilters
-                ? await resourceService.searchResources(params)
-                : await resourceService.getAllResources();
-            
-            setResources(response.data || response);
-            
-            // Extract unique locations for dropdown
-            const uniqueLocations = [...new Set((response.data || response).map(r => r.location))];
-            setLocations(uniqueLocations.sort());
+            const response = await resourceService.searchResources(params, paging);
+            const payload = response.data || response;
+            const pageContent = Array.isArray(payload) ? payload : (payload.content || []);
+
+            setResources(pageContent);
+
+            if (Array.isArray(payload)) {
+                setTotalPages(1);
+                setTotalElements(pageContent.length);
+            } else {
+                setTotalPages(Math.max(1, payload.totalPages || 1));
+                setTotalElements(payload.totalElements ?? pageContent.length);
+            }
         } catch (err) {
             console.error("Failed to fetch resources", err);
             setError("Failed to load resources. Please try again.");
@@ -60,16 +66,10 @@ const ResourceListPage = () => {
         }
     };
 
-    // Client-side search filtering (for name search)
-    const filteredResources = resources.filter(res => {
-        if (!filters.searchTerm) return true;
-        return (
-            res.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-            res.location.toLowerCase().includes(filters.searchTerm.toLowerCase())
-        );
-    });
+    const filteredResources = resources;
 
     const handleFilterChange = (filterName, value) => {
+        setPage(0);
         setFilters(prev => ({
             ...prev,
             [filterName]: value === '' ? null : value
@@ -84,10 +84,43 @@ const ResourceListPage = () => {
             location: null,
             status: 'ACTIVE'
         });
+        setSort('name,asc');
+        setPage(0);
     };
 
-    const activeFilterCount = Object.values(filters).filter(v => v).length - (filters.status ? 0 : 1);
+    const activeFilterCount =
+        (filters.searchTerm ? 1 : 0) +
+        (filters.type ? 1 : 0) +
+        (filters.minCapacity ? 1 : 0) +
+        (filters.location ? 1 : 0) +
+        (filters.status && filters.status !== 'ACTIVE' ? 1 : 0);
     const formatType = (type) => type.replace(/_/g, ' ');
+
+    const formatTime = (timeValue) => {
+        if (!timeValue) return null;
+
+        const timeText = String(timeValue);
+        const parts = timeText.split(':');
+        if (parts.length < 2) return timeText;
+
+        const hour = Number(parts[0]);
+        const minute = Number(parts[1]);
+        if (Number.isNaN(hour) || Number.isNaN(minute)) return timeText;
+
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${String(minute).padStart(2, '0')} ${period}`;
+    };
+
+    const getAvailabilityText = (resource) => {
+        const from = formatTime(resource.availableFrom);
+        const to = formatTime(resource.availableTo);
+
+        if (from && to) return `${from} - ${to}`;
+        if (from) return `From ${from}`;
+        if (to) return `Until ${to}`;
+        return 'Not specified';
+    };
 
     const getCapacityColor = (availableSeats, capacity) => {
         if (capacity == null || availableSeats == null) return 'from-gray-500 to-gray-400';
@@ -141,7 +174,7 @@ const ResourceListPage = () => {
                             <h3 className="font-semibold text-white">Filters</h3>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                             {/* Search */}
                             <div>
                                 <label className="block text-xs font-medium text-blue-300 mb-2">Search</label>
@@ -185,16 +218,13 @@ const ResourceListPage = () => {
                             {/* Location Filter */}
                             <div>
                                 <label className="block text-xs font-medium text-blue-300 mb-2">Location</label>
-                                <select
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer [&_option]:bg-slate-900"
+                                <input
+                                    type="text"
+                                    placeholder="e.g., Building A"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                                     value={filters.location || ''}
                                     onChange={(e) => handleFilterChange('location', e.target.value)}
-                                >
-                                    <option value="">All Locations</option>
-                                    {locations.map(loc => (
-                                        <option key={loc} value={loc}>{loc}</option>
-                                    ))}
-                                </select>
+                                />
                             </div>
 
                             {/* Status Filter */}
@@ -208,6 +238,25 @@ const ResourceListPage = () => {
                                     <option value="ACTIVE">Active</option>
                                     <option value="OUT_OF_SERVICE">Out of Service</option>
                                     <option value="">All Statuses</option>
+                                </select>
+                            </div>
+
+                            {/* Sort */}
+                            <div>
+                                <label className="block text-xs font-medium text-blue-300 mb-2">Sort</label>
+                                <select
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer [&_option]:bg-slate-900"
+                                    value={sort}
+                                    onChange={(e) => {
+                                        setSort(e.target.value);
+                                        setPage(0);
+                                    }}
+                                >
+                                    <option value="name,asc">Name (A-Z)</option>
+                                    <option value="name,desc">Name (Z-A)</option>
+                                    <option value="capacity,desc">Capacity (High-Low)</option>
+                                    <option value="capacity,asc">Capacity (Low-High)</option>
+                                    <option value="createdAt,desc">Newest First</option>
                                 </select>
                             </div>
                         </div>
@@ -230,115 +279,144 @@ const ResourceListPage = () => {
                             <p className="text-blue-200/60">No resources found matching your filters.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {filteredResources.map((res) => {
-                                const full = isFull(res);
-                                const isDisabled = res.status !== 'ACTIVE' || full;
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {filteredResources.map((res) => {
+                                    const full = isFull(res);
+                                    const isDisabled = res.status !== 'ACTIVE' || full;
 
-                                return (
-                                    <div
-                                        key={res.id}
-                                        className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2"
-                                    >
-                                        {/* Card Header Image Area */}
-                                        <div className="h-48 bg-gradient-to-br from-blue-600/20 to-purple-600/20 relative">
-                                            <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:scale-110 transition-transform duration-700">
-                                                <Calendar className="w-20 h-20 text-white" />
+                                    return (
+                                        <div
+                                            key={res.id}
+                                            className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2"
+                                        >
+                                            {/* Card Header Image Area */}
+                                            <div className="h-48 bg-gradient-to-br from-blue-600/20 to-purple-600/20 relative">
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-30 group-hover:scale-110 transition-transform duration-700">
+                                                    <Calendar className="w-20 h-20 text-white" />
+                                                </div>
+
+                                                {/* Status Badge */}
+                                                <div className="absolute top-4 left-4">
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
+                                                        res.status === 'ACTIVE'
+                                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                                    }`}>
+                                                        {res.status}
+                                                    </span>
+                                                </div>
+
+                                                {/* Type Badge */}
+                                                <div className="absolute top-4 right-4">
+                                                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                                                        {res.type}
+                                                    </span>
+                                                </div>
+
+                                                {/* FULL Overlay */}
+                                                {full && (
+                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                        <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-4 py-2 rounded-full">
+                                                            <XCircle className="w-4 h-4 text-red-400" />
+                                                            <span className="text-red-300 font-bold text-sm uppercase tracking-widest">Fully Booked</span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {/* Status Badge */}
-                                            <div className="absolute top-4 left-4">
-                                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
-                                                    res.status === 'ACTIVE'
-                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                        : 'bg-red-500/10 text-red-400 border-red-500/20'
-                                                }`}>
-                                                    {res.status}
-                                                </span>
-                                            </div>
+                                            {/* Card Body */}
+                                            <div className="p-6">
+                                                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{res.name}</h3>
 
-                                            {/* Type Badge */}
-                                            <div className="absolute top-4 right-4">
-                                                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                                                    {res.type}
-                                                </span>
-                                            </div>
-
-                                            {/* FULL Overlay */}
-                                            {full && (
-                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                    <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-4 py-2 rounded-full">
-                                                        <XCircle className="w-4 h-4 text-red-400" />
-                                                        <span className="text-red-300 font-bold text-sm uppercase tracking-widest">Fully Booked</span>
+                                                <div className="space-y-3 mb-5">
+                                                    <div className="flex items-center text-sm text-white/60">
+                                                        <MapPin className="w-4 h-4 mr-2 text-blue-400/60 flex-shrink-0" />
+                                                        {res.location}
+                                                    </div>
+                                                    <div className="flex items-center text-sm text-white/60">
+                                                        <Users className="w-4 h-4 mr-2 text-purple-400/60 flex-shrink-0" />
+                                                        Total Capacity: {res.capacity} persons
+                                                    </div>
+                                                    <div className="flex items-center text-sm text-white/60">
+                                                        <Clock3 className="w-4 h-4 mr-2 text-emerald-400/60 flex-shrink-0" />
+                                                        Availability: {getAvailabilityText(res)}
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
 
-                                        {/* Card Body */}
-                                        <div className="p-6">
-                                            <h3 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{res.name}</h3>
+                                                {/* Seat Availability Section */}
+                                                <div className="mb-5 p-3 rounded-xl bg-white/5 border border-white/10">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">Seat Availability</span>
+                                                        {full ? (
+                                                            <span className="text-xs font-bold text-red-400 flex items-center gap-1">
+                                                                <XCircle className="w-3 h-3" /> Full
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                                                                <CheckCircle className="w-3 h-3" />
+                                                                {res.availableSeats != null ? res.availableSeats : res.capacity} left
+                                                            </span>
+                                                        )}
+                                                    </div>
 
-                                            <div className="space-y-3 mb-5">
-                                                <div className="flex items-center text-sm text-white/60">
-                                                    <MapPin className="w-4 h-4 mr-2 text-blue-400/60 flex-shrink-0" />
-                                                    {res.location}
-                                                </div>
-                                                <div className="flex items-center text-sm text-white/60">
-                                                    <Users className="w-4 h-4 mr-2 text-purple-400/60 flex-shrink-0" />
-                                                    Total Capacity: {res.capacity} persons
-                                                </div>
-                                            </div>
+                                                    {/* Progress Bar */}
+                                                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${getCapacityColor(res.availableSeats, res.capacity)}`}
+                                                            style={{ width: getCapacityBarWidth(res.availableSeats, res.capacity) }}
+                                                        />
+                                                    </div>
 
-                                            {/* Seat Availability Section */}
-                                            <div className="mb-5 p-3 rounded-xl bg-white/5 border border-white/10">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">Seat Availability</span>
-                                                    {full ? (
-                                                        <span className="text-xs font-bold text-red-400 flex items-center gap-1">
-                                                            <XCircle className="w-3 h-3" /> Full
+                                                    <div className="flex justify-between mt-1">
+                                                        <span className="text-[10px] text-white/30">
+                                                            {res.bookedCount != null ? res.bookedCount : 0} booked
                                                         </span>
-                                                    ) : (
-                                                        <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                                                            <CheckCircle className="w-3 h-3" />
-                                                            {res.availableSeats != null ? res.availableSeats : res.capacity} left
+                                                        <span className="text-[10px] text-white/30">
+                                                            of {res.capacity}
                                                         </span>
-                                                    )}
+                                                    </div>
                                                 </div>
 
-                                                {/* Progress Bar */}
-                                                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${getCapacityColor(res.availableSeats, res.capacity)}`}
-                                                        style={{ width: getCapacityBarWidth(res.availableSeats, res.capacity) }}
-                                                    />
-                                                </div>
-
-                                                <div className="flex justify-between mt-1">
-                                                    <span className="text-[10px] text-white/30">
-                                                        {res.bookedCount != null ? res.bookedCount : 0} booked
-                                                    </span>
-                                                    <span className="text-[10px] text-white/30">
-                                                        of {res.capacity}
-                                                    </span>
-                                                </div>
+                                                <button
+                                                    onClick={() => navigate(`/book/${res.id}`)}
+                                                    disabled={isDisabled}
+                                                    className={`w-full py-3 text-white text-sm font-bold rounded-xl transition-all shadow-lg ${
+                                                        isDisabled
+                                                            ? 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'
+                                                            : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 group-hover:shadow-blue-500/40'
+                                                    }`}
+                                                >
+                                                    {full ? 'No Seats Available' : res.status !== 'ACTIVE' ? 'Unavailable' : 'Book This Resource'}
+                                                </button>
                                             </div>
-
-                                            <button
-                                                onClick={() => navigate(`/book/${res.id}`)}
-                                                disabled={isDisabled}
-                                                className={`w-full py-3 text-white text-sm font-bold rounded-xl transition-all shadow-lg ${
-                                                    isDisabled
-                                                        ? 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'
-                                                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 group-hover:shadow-blue-500/40'
-                                                }`}
-                                            >
-                                                {full ? 'No Seats Available' : res.status !== 'ACTIVE' ? 'Unavailable' : 'Book This Resource'}
-                                            </button>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white/5 border border-white/10 rounded-xl">
+                                <p className="text-sm text-blue-200/70">
+                                    Page {Math.min(page + 1, Math.max(totalPages, 1))} of {Math.max(totalPages, 1)}
+                                    {' '}| {totalElements} total resources
+                                </p>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setPage(prev => Math.max(0, prev - 1))}
+                                        disabled={page === 0}
+                                        className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        onClick={() => setPage(prev => Math.min(Math.max(totalPages - 1, 0), prev + 1))}
+                                        disabled={page + 1 >= totalPages}
+                                        className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-blue-300 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

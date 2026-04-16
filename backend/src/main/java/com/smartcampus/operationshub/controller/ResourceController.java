@@ -7,17 +7,26 @@ import com.smartcampus.operationshub.entity.ResourceType;
 import com.smartcampus.operationshub.service.ResourceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/resources")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ResourceController {
+
+    private static final CacheControl READ_CACHE_POLICY = CacheControl
+            .maxAge(60, TimeUnit.SECONDS)
+            .cachePublic();
 
     private final ResourceService resourceService;
 
@@ -33,16 +42,20 @@ public class ResourceController {
 
     /**
      * Get resources with optional filters
-     * GET /api/resources?type=&minCapacity=&location=&status=
+     * GET /api/resources?type=&minCapacity=&location=&name=&status=&page=&size=&sort=
      */
     @GetMapping
-    public ResponseEntity<List<ResourceDTO>> getResources(
+    public ResponseEntity<Page<ResourceDTO>> getResources(
             @RequestParam(required = false) ResourceType type,
             @RequestParam(required = false) Integer minCapacity,
             @RequestParam(required = false) String location,
-            @RequestParam(required = false) ResourceStatus status) {
-        List<ResourceDTO> resources = resourceService.searchResources(type, minCapacity, location, status);
-        return ResponseEntity.ok(resources);
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) ResourceStatus status,
+            @PageableDefault(size = 12, sort = "name") Pageable pageable) {
+        Page<ResourceDTO> resources = resourceService.searchResources(type, minCapacity, location, name, status, pageable);
+        return ResponseEntity.ok()
+            .cacheControl(READ_CACHE_POLICY)
+            .body(resources);
     }
 
     /**
@@ -53,7 +66,9 @@ public class ResourceController {
     @GetMapping("/{id}")
     public ResponseEntity<ResourceDTO> getResourceById(@PathVariable("id") Long id) {
         ResourceDTO resource = resourceService.getResourceById(id);
-        return ResponseEntity.ok(resource);
+        return ResponseEntity.ok()
+                .cacheControl(READ_CACHE_POLICY)
+                .body(resource);
     }
 
     /**

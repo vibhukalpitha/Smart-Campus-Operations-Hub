@@ -9,6 +9,8 @@ import com.smartcampus.operationshub.exception.ResourceNotFoundException;
 import com.smartcampus.operationshub.repository.BookingRepository;
 import com.smartcampus.operationshub.repository.ResourceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +55,15 @@ public class ResourceService {
                 throw new IllegalArgumentException("Invalid availability time range: availableTo must be after availableFrom");
             }
         }
+    }
+
+    private String normalizeOptionalSearchText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**
@@ -112,14 +123,16 @@ public class ResourceService {
     }
 
     /**
-     * Search resources by type, capacity, and location
+     * Search resources by optional filters
      */
     @Transactional(readOnly = true)
-    public List<ResourceDTO> searchResources(ResourceType type, Integer minCapacity, String location, ResourceStatus status) {
-        List<Resource> resources = resourceRepository.findByTypeCapacityAndLocation(type, minCapacity, location, status);
-        return resources.stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+    public Page<ResourceDTO> searchResources(ResourceType type, Integer minCapacity, String location, String name, ResourceStatus status, Pageable pageable) {
+        String normalizedLocation = normalizeOptionalSearchText(location);
+        String normalizedName = normalizeOptionalSearchText(name);
+
+        return resourceRepository
+                .findByFilters(type, minCapacity, normalizedLocation, normalizedName, status, pageable)
+                .map(this::mapToDTO);
     }
 
     /**
