@@ -34,6 +34,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/resources/**").permitAll()  // Module A: Facilities & Assets (no auth required for dev)
+                .requestMatchers("/ws/**").permitAll() // WebSockets
+                .requestMatchers("/uploads/**").permitAll() // Profile Pictures
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

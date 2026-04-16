@@ -36,4 +36,14 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/picture")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDto> uploadProfilePicture(@PathVariable("id") Long id, @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            return ResponseEntity.ok(userService.uploadProfilePictureById(id, file));
+        } catch (java.io.IOException e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
 }
