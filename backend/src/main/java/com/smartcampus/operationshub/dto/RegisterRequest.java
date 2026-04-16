@@ -1,5 +1,6 @@
 package com.smartcampus.operationshub.dto;
 
+import java.time.LocalDate;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -25,4 +26,8 @@ public class RegisterRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+    
+    private LocalDate dateOfBirth;
+    
+    private String gender;
 }

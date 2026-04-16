@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -25,13 +26,21 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final FileStorageService fileStorageService;
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request, MultipartFile profilePicture) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already in use");
         }
 
         String vToken = UUID.randomUUID().toString();
+
+        String profilePicPath = null;
+        try {
+            profilePicPath = fileStorageService.saveProfilePicture(profilePicture);
+        } catch (Exception e) {
+            System.err.println("Failed to save profile picture: " + e.getMessage());
+        }
 
         var user = User.builder()
                 .firstName(request.getFirstName())
@@ -41,6 +50,9 @@ public class AuthService {
                 .role(Role.USER) // default to USER. Can be changed by DB/admin
                 .emailVerified(false)
                 .verificationToken(vToken)
+                .dateOfBirth(request.getDateOfBirth())
+                .gender(request.getGender())
+                .profilePicture(profilePicPath)
                 .build();
 
         userRepository.save(user);

@@ -51,4 +51,73 @@ export const userService = {
     deleteUser: (id) => api.delete(`/users/${id}`)
 };
 
+export const resourceService = {
+    // Legacy aliases used by existing pages
+    getAll: () => api.get('/resources'),
+    getById: (id) => api.get(`/resources/${id}`),
+    create: (data) => api.post('/resources', data),
+    update: (id, data) => api.put(`/resources/${id}`, data),
+    remove: (id) => api.delete(`/resources/${id}`),
+
+    /**
+     * Get all resources
+     */
+    getAllResources: (params = {}) => api.get('/resources', { params }),
+
+    /**
+     * Get resource by ID
+     */
+    getResourceById: (id) => api.get(`/resources/${id}`),
+
+    /**
+     * Create a new resource
+     */
+    createResource: (data) => api.post('/resources', data),
+
+    /**
+     * Update an existing resource
+     */
+    updateResource: (id, data) => api.put(`/resources/${id}`, data),
+
+    /**
+     * Delete a resource
+     */
+    deleteResource: (id) => api.delete(`/resources/${id}`),
+
+    /**
+     * Search resources with combined filters
+     * Parameters are automatically sent only if they have values
+     */
+    searchResources: async (filters = {}, paging = {}) => {
+        // Build clean params object - only include non-null values
+        const params = Object.fromEntries(
+            Object.entries({ ...filters, ...paging }).filter(([_, value]) => value !== null && value !== undefined && value !== '')
+        );
+        return api.get('/resources', { params });
+    },
+
+    /**
+     * Get resources by type
+     */
+    getResourcesByType: (type, params = {}) => api.get('/resources', { params: { type, ...params } }),
+
+    /**
+     * Get resources by location
+     */
+    getResourcesByLocation: (location, params = {}) => api.get('/resources', { params: { location, ...params } }),
+
+    /**
+     * Get all active resources
+     */
+    getActiveResources: (params = {}) => api.get('/resources', { params: { status: 'ACTIVE', ...params } })
+};
+
+export const bookingService = {
+    getAll: () => api.get('/bookings'),
+    getEvents: () => api.get('/bookings/events'),
+    create: (data) => api.post('/bookings', data),
+    updateStatus: (id, status, reason) => api.put(`/bookings/${id}/status`, { status, reason }),
+    cancel: (id) => api.delete(`/bookings/${id}`)
+};
+
 export default api;

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import NotificationPanel from '../components/NotificationPanel';
 import Footer from '../components/Footer';
-import { LayoutDashboard, Users, Calendar, Settings, LogOut, Search, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Settings, LogOut, Search, Bell, ArrowRight, Package, Clock, Shield } from 'lucide-react';
 
 const Dashboard = () => {
     const [user, setUser] = useState(null);
@@ -155,13 +155,49 @@ const Dashboard = () => {
                         </div>
 
                         {/* Recent Activity Section */}
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
-                            <h3 className="text-lg font-semibold text-white mb-6">Recent Hub Activity</h3>
-                            <div className="border-2 border-dashed border-white/10 rounded-2xl h-48 flex flex-col items-center justify-center bg-white/5 hover:bg-white/10 transition-colors">
-                                <Settings className="w-8 h-8 text-indigo-300/30 mb-3" />
-                                <p className="text-indigo-200/50 text-center max-w-sm">
-                                    Other team members will add modules like Issue Reporting and Resource Booking here shortly.
-                                </p>
+                        <div className="space-y-6">
+                            <h3 className="text-lg font-semibold text-white">Quick Access Modules</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {/* Book a Resource */}
+                                <div 
+                                    onClick={() => navigate('/resources')}
+                                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group cursor-pointer relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full group-hover:bg-blue-500/20 transition-all duration-500"></div>
+                                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                        <Package className="text-blue-400 w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Resource Hub</h3>
+                                    <p className="text-white/40 text-sm leading-relaxed mb-6">Browse and request campus facilities, laboratories, and common areas.</p>
+                                    <div className="flex items-center text-blue-400 font-bold text-sm">
+                                        Explore Catalog <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                </div>
+
+                                {/* My Bookings */}
+                                <div 
+                                    onClick={() => navigate('/my-bookings')}
+                                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group cursor-pointer relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-bl-full group-hover:bg-purple-500/20 transition-all duration-500"></div>
+                                    <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                        <Clock className="text-purple-400 w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">My Bookings</h3>
+                                    <p className="text-white/40 text-sm leading-relaxed mb-6">Track your active requests, view approvals, or cancel your upcoming bookings.</p>
+                                    <div className="flex items-center text-purple-400 font-bold text-sm">
+                                        Manage Requests <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                </div>
+
+                                {/* Support Placeholder */}
+                                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group relative overflow-hidden opacity-50 grayscale cursor-not-allowed">
+                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
+                                        <Shield className="text-white/40 w-8 h-8" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Service Hub</h3>
+                                    <p className="text-white/40 text-sm leading-relaxed mb-6">Log maintenance requests and report campus issues (Coming soon).</p>
+                                </div>
                             </div>
                         </div>
                     </div>
