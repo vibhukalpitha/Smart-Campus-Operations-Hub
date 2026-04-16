@@ -7,17 +7,26 @@ import com.smartcampus.operationshub.entity.ResourceType;
 import com.smartcampus.operationshub.service.ResourceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/resources")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class ResourceController {
+
+    private static final CacheControl READ_CACHE_POLICY = CacheControl
+            .maxAge(60, TimeUnit.SECONDS)
+            .cachePublic();
 
     private final ResourceService resourceService;
 
@@ -32,61 +41,21 @@ public class ResourceController {
     }
 
     /**
-     * Get all resources
-     * GET /api/resources
+     * Get resources with optional filters
+     * GET /api/resources?type=&minCapacity=&location=&name=&status=&page=&size=&sort=
      */
     @GetMapping
-    public ResponseEntity<List<ResourceDTO>> getAllResources() {
-        List<ResourceDTO> resources = resourceService.getAllResources();
-        return ResponseEntity.ok(resources);
-    }
-
-    /**
-     * Search resources with query parameters
-     * GET /api/resources/search?type=LECTURE_HALL&minCapacity=30&location=Building A&status=ACTIVE
-     * NOTE: This must be BEFORE /{id} to prevent Spring from matching 'search' as an ID
-     */
-    @GetMapping("/search")
-    public ResponseEntity<List<ResourceDTO>> searchResources(
+    public ResponseEntity<Page<ResourceDTO>> getResources(
             @RequestParam(required = false) ResourceType type,
             @RequestParam(required = false) Integer minCapacity,
             @RequestParam(required = false) String location,
-            @RequestParam(required = false) ResourceStatus status) {
-        List<ResourceDTO> resources = resourceService.searchResources(type, minCapacity, location, status);
-        return ResponseEntity.ok(resources);
-    }
-
-    /**
-     * Get resources by type
-     * GET /api/resources/type/{type}
-     * NOTE: This must be BEFORE /{id} to prevent Spring from matching 'type/{type}' as an ID
-     */
-    @GetMapping("/type/{type}")
-    public ResponseEntity<List<ResourceDTO>> getResourcesByType(@PathVariable("type") ResourceType type) {
-        List<ResourceDTO> resources = resourceService.getResourcesByType(type);
-        return ResponseEntity.ok(resources);
-    }
-
-    /**
-     * Get resources by location
-     * GET /api/resources/location/{location}
-     * NOTE: This must be BEFORE /{id} to prevent Spring from matching 'location/{location}' as an ID
-     */
-    @GetMapping("/location/{location}")
-    public ResponseEntity<List<ResourceDTO>> getResourcesByLocation(@PathVariable("location") String location) {
-        List<ResourceDTO> resources = resourceService.getResourcesByLocation(location);
-        return ResponseEntity.ok(resources);
-    }
-
-    /**
-     * Get all active resources
-     * GET /api/resources/active
-     * NOTE: This must be BEFORE /{id} to prevent Spring from matching 'active' as an ID
-     */
-    @GetMapping("/active")
-    public ResponseEntity<List<ResourceDTO>> getActiveResources() {
-        List<ResourceDTO> resources = resourceService.getActiveResources();
-        return ResponseEntity.ok(resources);
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) ResourceStatus status,
+            @PageableDefault(size = 12, sort = "name") Pageable pageable) {
+        Page<ResourceDTO> resources = resourceService.searchResources(type, minCapacity, location, name, status, pageable);
+        return ResponseEntity.ok()
+            .cacheControl(READ_CACHE_POLICY)
+            .body(resources);
     }
 
     /**
@@ -97,7 +66,9 @@ public class ResourceController {
     @GetMapping("/{id}")
     public ResponseEntity<ResourceDTO> getResourceById(@PathVariable("id") Long id) {
         ResourceDTO resource = resourceService.getResourceById(id);
-        return ResponseEntity.ok(resource);
+        return ResponseEntity.ok()
+                .cacheControl(READ_CACHE_POLICY)
+                .body(resource);
     }
 
     /**

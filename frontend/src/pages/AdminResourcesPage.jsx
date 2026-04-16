@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import resourceService from '../services/resourceService';
+import { resourceService } from '../services/api';
 import AdminLayout from '../components/AdminLayout';
 import { Plus, Edit2, Trash2, Search, X } from 'lucide-react';
 
@@ -22,8 +22,9 @@ const AdminResourcesPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await resourceService.getAllResources();
-      setResources(data);
+      const response = await resourceService.getAllResources({ page: 0, size: 1000, sort: 'name,asc' });
+      const payload = response.data;
+      setResources(Array.isArray(payload) ? payload : (payload.content || []));
     } catch (err) {
       console.error('Failed to fetch resources:', err);
       setError('Failed to load resources. Please try again.');
