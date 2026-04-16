@@ -62,7 +62,7 @@ export const resourceService = {
     /**
      * Get all resources
      */
-    getAllResources: () => api.get('/resources'),
+    getAllResources: (params = {}) => api.get('/resources', { params }),
 
     /**
      * Get resource by ID
@@ -88,10 +88,10 @@ export const resourceService = {
      * Search resources with combined filters
      * Parameters are automatically sent only if they have values
      */
-    searchResources: async (filters = {}) => {
+    searchResources: async (filters = {}, paging = {}) => {
         // Build clean params object - only include non-null values
         const params = Object.fromEntries(
-            Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined && value !== '')
+            Object.entries({ ...filters, ...paging }).filter(([_, value]) => value !== null && value !== undefined && value !== '')
         );
         return api.get('/resources', { params });
     },
@@ -99,17 +99,17 @@ export const resourceService = {
     /**
      * Get resources by type
      */
-    getResourcesByType: (type) => api.get('/resources', { params: { type } }),
+    getResourcesByType: (type, params = {}) => api.get('/resources', { params: { type, ...params } }),
 
     /**
      * Get resources by location
      */
-    getResourcesByLocation: (location) => api.get('/resources', { params: { location } }),
+    getResourcesByLocation: (location, params = {}) => api.get('/resources', { params: { location, ...params } }),
 
     /**
      * Get all active resources
      */
-    getActiveResources: () => api.get('/resources', { params: { status: 'ACTIVE' } })
+    getActiveResources: (params = {}) => api.get('/resources', { params: { status: 'ACTIVE', ...params } })
 };
 
 export const bookingService = {

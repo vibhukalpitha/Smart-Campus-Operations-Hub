@@ -10,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+    boolean existsByResourceId(Long resourceId);
 
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
@@ -29,3 +30,4 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
            "AND b.status = com.smartcampus.operationshub.entity.BookingStatus.APPROVED")
     Long sumApprovedAttendeesByResourceId(@Param("resourceId") Long resourceId);
 }
+
