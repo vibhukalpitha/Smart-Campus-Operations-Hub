@@ -57,4 +57,10 @@ public class BookingController {
         bookingService.cancelBooking(id, user);
         return ResponseEntity.noContent().build();
     }
+
+    // GET: Events for Calendar
+    @GetMapping("/events")
+    public ResponseEntity<List<Map<String, Object>>> getCalendarEvents(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(bookingService.getBookingsForCalendar(user));
+    }
 }

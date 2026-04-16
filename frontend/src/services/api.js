@@ -114,6 +114,7 @@ export const resourceService = {
 
 export const bookingService = {
     getAll: () => api.get('/bookings'),
+    getEvents: () => api.get('/bookings/events'),
     create: (data) => api.post('/bookings', data),
     updateStatus: (id, status, reason) => api.put(`/bookings/${id}/status`, { status, reason }),
     cancel: (id) => api.delete(`/bookings/${id}`)
