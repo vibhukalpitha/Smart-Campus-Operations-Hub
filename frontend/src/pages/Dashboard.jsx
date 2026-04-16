@@ -9,14 +9,20 @@ const Dashboard = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
-        
-        if (!token || !storedUser) {
-            navigate('/login');
-        } else {
-            setUser(JSON.parse(storedUser));
-        }
+        const loadUser = () => {
+            const storedUser = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            if (!token || !storedUser) {
+                navigate('/login');
+            } else {
+                setUser(JSON.parse(storedUser));
+            }
+        };
+
+        loadUser();
+
+        window.addEventListener('storage', loadUser);
+        return () => window.removeEventListener('storage', loadUser);
     }, [navigate]);
 
     const handleLogout = () => {
@@ -104,10 +110,14 @@ const Dashboard = () => {
                                 <p className="text-sm font-semibold text-white group-hover:text-indigo-200 transition-colors">{user.firstName} {user.lastName}</p>
                                 <p className="text-xs text-indigo-300/70 capitalize">{user.role}</p>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-indigo-500/20">
-                                <div className="w-full h-full bg-[#0a0f1c] rounded-full flex items-center justify-center text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
-                                    {user.firstName?.[0] || 'U'}{user.lastName?.[0] || ''}
-                                </div>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-indigo-500/20 overflow-hidden relative">
+                                {user.profilePicture ? (
+                                    <img src={`http://localhost:8080/uploads/profile-pictures/${user.profilePicture}`} alt="Avatar" className="w-full h-full rounded-full object-cover relative z-10" />
+                                ) : (
+                                    <div className="w-full h-full bg-[#0a0f1c] rounded-full flex items-center justify-center text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
+                                        {user.firstName?.[0] || 'U'}{user.lastName?.[0] || ''}
+                                    </div>
+                                )}
                             </div>
                         </Link>
                     </div>

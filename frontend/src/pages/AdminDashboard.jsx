@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { userService } from '../services/api';
+import api, { userService } from '../services/api';
 import AdminLayout from '../components/AdminLayout';
 import { Users as UsersIcon, Wrench, Trash2, Edit, Check, X, ShieldAlert } from 'lucide-react';
 
@@ -69,6 +69,39 @@ const AdminDashboard = () => {
         } catch (err) {
             console.error("Failed to update role", err);
             alert("Error updating role.");
+        }
+    };
+
+    const handleRemoteAvatarUpload = async (id, e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const formDataApi = api.create({ baseURL: api.defaults.baseURL });
+            formDataApi.interceptors.request.use((config) => {
+                const token = localStorage.getItem('token');
+                if (token) config.headers.Authorization = `Bearer ${token}`;
+                return config;
+            });
+
+            const res = await formDataApi.post(`/users/${id}/picture`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            setUsers(users.map(u => u.id === id ? res.data : u));
+            
+            if (user.id === id) {
+                 const updatedUser = { ...user, profilePicture: res.data.profilePicture };
+                 localStorage.setItem('user', JSON.stringify(updatedUser));
+                 setUser(updatedUser);
+                 window.dispatchEvent(new Event('storage'));
+            }
+        } catch (err) {
+            console.error("Failed to upload user picture", err);
+            alert("Error updating user picture.");
         }
     };
 
@@ -169,7 +202,33 @@ const AdminDashboard = () => {
                                         {displayedUsers.map((u) => (
                                             <tr key={u.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                                                 <td className="py-4 pl-4">
-                                                    <div className="font-medium text-white">{u.firstName} {u.lastName}</div>
+                                                    <div className="flex items-center space-x-3">
+                                                        <div 
+                                                            className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 cursor-pointer overflow-hidden border border-white/20 hover:border-indigo-400 group/avatar relative"
+                                                            onClick={() => {
+                                                                const fileInput = document.getElementById(`upload-${u.id}`);
+                                                                if(fileInput) fileInput.click();
+                                                            }}
+                                                            title="Update User Picture"
+                                                        >
+                                                            {u.profilePicture ? (
+                                                                <img src={`http://localhost:8080/uploads/profile-pictures/${u.profilePicture}`} className="w-full h-full object-cover group-hover/avatar:opacity-50 transition-opacity" alt="" />
+                                                            ) : (
+                                                                <span className="text-white text-xs font-bold">{u.firstName ? u.firstName[0].toUpperCase() : 'U'}</span>
+                                                            )}
+                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                                                                <Edit className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        </div>
+                                                        <input 
+                                                            type="file" 
+                                                            id={`upload-${u.id}`} 
+                                                            className="hidden" 
+                                                            accept="image/*" 
+                                                            onChange={(e) => handleRemoteAvatarUpload(u.id, e)} 
+                                                        />
+                                                        <div className="font-medium text-white">{u.firstName} {u.lastName}</div>
+                                                    </div>
                                                 </td>
                                                 <td className="py-4 text-white/70">{u.email}</td>
                                                 <td className="py-4">

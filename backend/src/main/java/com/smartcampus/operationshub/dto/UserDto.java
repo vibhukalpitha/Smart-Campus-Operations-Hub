@@ -18,4 +18,5 @@ public class UserDto {
     private String lastName;
     private Role role;
     private LocalDateTime createdAt;
+    private String profilePicture;
 }

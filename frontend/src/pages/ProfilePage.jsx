@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { Settings, ShieldCheck, Mail, Lock } from 'lucide-react';
+import { Settings, ShieldCheck, Mail, Lock, Camera } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -14,6 +14,7 @@ const ProfilePage = () => {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -56,6 +57,38 @@ const ProfilePage = () => {
         }
     };
 
+    const handleAvatarUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const formDataApi = api.create({
+                baseURL: api.defaults.baseURL,
+            });
+            formDataApi.interceptors.request.use((config) => {
+                const token = localStorage.getItem('token');
+                if (token) config.headers.Authorization = `Bearer ${token}`;
+                return config;
+            });
+            
+            const res = await formDataApi.post('/profile/picture', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            setMessage("Profile picture updated successfully!");
+            const updatedUser = { ...user, profilePicture: res.data.profilePicture };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(updatedUser);
+            
+            window.dispatchEvent(new Event('storage'));
+        } catch (err) {
+            setError("Failed to upload profile picture");
+        }
+    };
+
     if (!user) return null;
 
     return (
@@ -67,10 +100,25 @@ const ProfilePage = () => {
 
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 max-w-lg w-full text-white shadow-2xl relative z-10">
                 <div className="flex flex-col items-center mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex justify-center items-center mb-4 shadow-lg shadow-indigo-500/20 group relative overflow-hidden">
-                        <Settings className="w-10 h-10 text-white group-hover:rotate-45 transition-transform duration-500" />
+                    <div className="relative group">
+                        <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex justify-center items-center mb-4 shadow-xl shadow-indigo-500/20 overflow-hidden ring-4 ring-white/10">
+                            {user.profilePicture ? (
+                                <img src={`http://localhost:8080/uploads/profile-pictures/${user.profilePicture}`} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <Settings className="w-12 h-12 text-white/50" />
+                            )}
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="absolute bottom-4 right-0 bg-indigo-500 hover:bg-indigo-400 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 border-2 border-[#0a0f1c]"
+                            title="Change Profile Picture"
+                        >
+                            <Camera className="w-4 h-4" />
+                        </button>
                     </div>
-                    <h2 className="text-2xl font-bold">Account Options</h2>
+                    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                    <h2 className="text-2xl font-bold mt-2">Account Options</h2>
                     <p className="text-white/40 mt-1">Configure your personal preferences</p>
                 </div>
 
