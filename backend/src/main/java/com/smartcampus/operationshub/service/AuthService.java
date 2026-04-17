@@ -158,5 +158,87 @@ public class AuthService {
                 .role(user.getRole())
                 .build();
     }
+
+    @org.springframework.beans.factory.annotation.Value("${github.client.id:}")
+    private String githubClientId;
+
+    @org.springframework.beans.factory.annotation.Value("${github.client.secret:}")
+    private String githubClientSecret;
+
+    public AuthResponse githubLogin(String code) {
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+        
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        headers.setAccept(java.util.List.of(org.springframework.http.MediaType.APPLICATION_JSON));
+        java.util.Map<String, String> params = new java.util.HashMap<>();
+        params.put("client_id", githubClientId);
+        params.put("client_secret", githubClientSecret);
+        params.put("code", code);
+        
+        org.springframework.http.HttpEntity<java.util.Map<String, String>> request = new org.springframework.http.HttpEntity<>(params, headers);
+        org.springframework.http.ResponseEntity<java.util.Map> response;
+        try {
+            response = restTemplate.postForEntity("https://github.com/login/oauth/access_token", request, java.util.Map.class);
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            throw new RuntimeException("GitHub oauth token error: " + e.getResponseBodyAsString());
+        }
+        
+        String accessToken = (String) response.getBody().get("access_token");
+        if (accessToken == null) {
+            throw new RuntimeException("Failed to get access token from GitHub. Body returned: " + response.getBody());
+        }
+        
+        org.springframework.http.HttpHeaders userHeaders = new org.springframework.http.HttpHeaders();
+        userHeaders.setBearerAuth(accessToken);
+        org.springframework.http.HttpEntity<String> userRequest = new org.springframework.http.HttpEntity<>(userHeaders);
+        
+        org.springframework.http.ResponseEntity<java.util.Map> userResponse;
+        try {
+            userResponse = restTemplate.exchange("https://api.github.com/user", org.springframework.http.HttpMethod.GET, userRequest, java.util.Map.class);
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            throw new RuntimeException("GitHub user profile fetch error: " + e.getResponseBodyAsString());
+        }
+        
+        java.util.Map<String, Object> userData = userResponse.getBody();
+        String login = (String) userData.get("login");
+        String name = (String) userData.get("name");
+        String avatarUrl = (String) userData.get("avatar_url");
+        
+        org.springframework.http.ResponseEntity<java.util.List> emailResponse = restTemplate.exchange("https://api.github.com/user/emails", org.springframework.http.HttpMethod.GET, userRequest, java.util.List.class);
+        String email = null;
+        for (Object item : emailResponse.getBody()) {
+            java.util.Map eInfo = (java.util.Map) item;
+            if (Boolean.TRUE.equals(eInfo.get("primary")) && Boolean.TRUE.equals(eInfo.get("verified"))) {
+                email = (String) eInfo.get("email");
+                break;
+            }
+        }
+        if (email == null) email = login + "@github.user.local";
+        
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            user = User.builder()
+                .firstName(name != null ? name.split(" ")[0] : login)
+                .lastName(name != null && name.split(" ").length > 1 ? name.substring(name.indexOf(" ") + 1) : "GithubUser")
+                .email(email)
+                .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .role(Role.USER)
+                .emailVerified(true)
+                .profilePicture(avatarUrl)
+                .build();
+            userRepository.save(user);
+        }
+        
+        String jwtToken = jwtUtil.generateToken(user);
+        return AuthResponse.builder()
+                .token(jwtToken)
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .role(user.getRole())
+                .profilePicture(user.getProfilePicture())
+                .build();
+    }
 }
 
