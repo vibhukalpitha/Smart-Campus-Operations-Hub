@@ -66,5 +66,15 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/github")
+    public ResponseEntity<?> githubLogin(@RequestParam("code") String code) {
+        try {
+            return ResponseEntity.ok(authService.githubLogin(code));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", "GitHub Login Failed: " + e.getMessage()));
+        }
+    }
 }
 
