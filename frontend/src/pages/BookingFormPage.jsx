@@ -71,7 +71,7 @@ const BookingFormPage = () => {
         <div className="min-h-screen bg-[#0a0f1c] flex flex-col items-center justify-center text-white px-4 text-center">
             <h2 className="text-3xl font-bold mb-4">Error</h2>
             <p className="text-white/60 mb-8">{error}</p>
-            <button onClick={() => navigate('/resources')} className="px-6 py-2 bg-blue-600 rounded-xl font-bold">Back to Resources</button>
+            <button onClick={() => navigate('/resources/catalog')} className="px-6 py-2 bg-blue-600 rounded-xl font-bold">Back to Resources</button>
         </div>
     );
 
@@ -81,7 +81,7 @@ const BookingFormPage = () => {
             
             <main className="flex-1 container mx-auto px-4 py-12 max-w-4xl">
                 <button 
-                    onClick={() => navigate('/resources')}
+                    onClick={() => navigate('/resources/catalog')}
                     className="flex items-center text-blue-300 hover:text-white mb-8 transition-colors group"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
