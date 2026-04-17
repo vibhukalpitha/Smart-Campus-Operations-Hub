@@ -119,4 +119,24 @@ export const bookingService = {
     cancel: (id) => api.delete(`/bookings/${id}`)
 };
 
+export const ticketService = {
+    createTicket: (data) => api.post('/tickets', data),
+    getAllTickets: () => api.get('/tickets'),
+    getTicketById: (id) => api.get(`/tickets/${id}`),
+    updateStatus: (id, status) => api.patch(`/tickets/${id}/status?status=${status}`),
+    assignTechnician: (id, technicianId) => api.patch(`/tickets/${id}/assign?technicianId=${technicianId}`),
+    addComment: (ticketId, data) => api.post(`/tickets/${ticketId}/comments`, data),
+    getComments: (ticketId) => api.get(`/tickets/${ticketId}/comments`),
+    updateComment: (commentId, data) => api.put(`/tickets/comments/${commentId}`, data),
+    deleteComment: (commentId) => api.delete(`/tickets/comments/${commentId}`),
+    uploadImage: (ticketId, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post(`/tickets/${ticketId}/images`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+    getImages: (ticketId) => api.get(`/tickets/${ticketId}/images`)
+};
+
 export default api;

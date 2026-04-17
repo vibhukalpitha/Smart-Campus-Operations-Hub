@@ -190,13 +190,20 @@ const Dashboard = () => {
                                     </div>
                                 </div>
 
-                                {/* Support Placeholder */}
-                                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group relative overflow-hidden opacity-50 grayscale cursor-not-allowed">
-                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
-                                        <Shield className="text-white/40 w-8 h-8" />
+                                {/* Support / Ticketing */}
+                                <div 
+                                    onClick={() => navigate('/tickets/create')}
+                                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group cursor-pointer relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-bl-full group-hover:bg-indigo-500/20 transition-all duration-500"></div>
+                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                        <Shield className="text-indigo-400 w-8 h-8" />
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-2">Service Hub</h3>
-                                    <p className="text-white/40 text-sm leading-relaxed mb-6">Log maintenance requests and report campus issues (Coming soon).</p>
+                                    <p className="text-white/40 text-sm leading-relaxed mb-6">Log maintenance requests and report campus issues directly to our team.</p>
+                                    <div className="flex items-center text-indigo-400 font-bold text-sm">
+                                        Open Ticket <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
