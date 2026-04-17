@@ -35,7 +35,8 @@ api.interceptors.response.use(
 
 export const authService = {
     login: (credentials) => api.post('/auth/login', credentials),
-    register: (userData) => api.post('/auth/register', userData)
+    register: (userData) => api.post('/auth/register', userData),
+    githubLogin: (code) => api.post(`/auth/github?code=${code}`)
 };
 
 export const notificationService = {
@@ -114,6 +115,7 @@ export const resourceService = {
 
 export const bookingService = {
     getAll: () => api.get('/bookings'),
+    getEvents: () => api.get('/bookings/events'),
     create: (data) => api.post('/bookings', data),
     updateStatus: (id, status, reason) => api.put(`/bookings/${id}/status`, { status, reason }),
     cancel: (id) => api.delete(`/bookings/${id}`)

@@ -142,4 +142,47 @@ public class BookingService {
                 .createdAt(booking.getCreatedAt())
                 .build();
     }
+
+    public List<java.util.Map<String, Object>> getBookingsForCalendar(User user) {
+        boolean isAdmin = user.getRole().name().equals("ADMIN");
+        List<Booking> allBookings = bookingRepository.findAll();
+        
+        List<java.util.Map<String, Object>> events = new java.util.ArrayList<>();
+        for (Booking b : allBookings) {
+            if (!isAdmin && !b.getUser().getId().equals(user.getId()) 
+                && !(b.getStatus() == BookingStatus.APPROVED || b.getStatus() == BookingStatus.PENDING)) {
+                continue;
+            }
+
+            java.util.Map<String, Object> event = new java.util.HashMap<>();
+            event.put("id", b.getId());
+            event.put("start", b.getStartTime().toString());
+            event.put("end", b.getEndTime().toString());
+
+            if (isAdmin || b.getUser().getId().equals(user.getId())) {
+                event.put("title", "Booking (" + b.getStatus() + ")");
+                event.put("color", getColorForStatus(b.getStatus().name()));
+                event.put("user_email", b.getUser().getEmail());
+                event.put("status", b.getStatus().name());
+                event.put("purpose", b.getPurpose());
+                event.put("resource_name", b.getResource().getName());
+            } else {
+                event.put("title", "Booked");
+                event.put("color", "gray");
+                event.put("display", "block");
+            }
+            events.add(event);
+        }
+        return events;
+    }
+
+    private String getColorForStatus(String status) {
+        switch (status) {
+            case "APPROVED": return "green";
+            case "PENDING": return "#eab308";
+            case "REJECTED": return "red";
+            case "CANCELLED": return "gray";
+            default: return "blue";
+        }
+    }
 }
