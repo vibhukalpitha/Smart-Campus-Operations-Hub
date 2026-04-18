@@ -122,6 +122,7 @@ export const bookingService = {
 export const ticketService = {
     createTicket: (data) => api.post('/tickets', data),
     getAllTickets: () => api.get('/tickets'),
+    getMyTickets: () => api.get('/tickets/my'),
     getTicketById: (id) => api.get(`/tickets/${id}`),
     updateStatus: (id, status) => api.patch(`/tickets/${id}/status?status=${status}`),
     assignTechnician: (id, technicianId) => api.patch(`/tickets/${id}/assign?technicianId=${technicianId}`),
