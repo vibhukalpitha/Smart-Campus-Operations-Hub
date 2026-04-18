@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { resourceService } from '../services/api';
+import { resourceService, bookingService } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { MapPin, Users, Info, Calendar, Clock3, Filter, CheckCircle, XCircle, X, ArrowLeft } from 'lucide-react';
@@ -16,6 +16,11 @@ const ResourceListPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+
+    const userRole = (() => {
+        const userStr = localStorage.getItem('user');
+        return userStr && userStr !== "undefined" ? JSON.parse(userStr).role : null;
+    })();
 
     // Combined filter states
     const [filters, setFilters] = useState({
@@ -55,28 +60,71 @@ const ResourceListPage = () => {
         setLoading(true);
         setError(null);
         try {
-            // Build params object with only non-null/non-empty values
-            const params = {};
-            if (filters.searchTerm) params.name = filters.searchTerm;
-            if (filters.type) params.type = filters.type;
-            if (filters.minCapacity) params.minCapacity = parseInt(filters.minCapacity);
-            if (filters.location) params.location = filters.location;
-            if (filters.status) params.status = filters.status;
+            if (userRole === 'USER') {
+                const response = await bookingService.getAllLecturerSessions();
+                const sessions = response.data || [];
+                
+                // Map each session to a card format
+                const mappedResources = sessions.map((session, index) => {
+                    const startDt = new Date(session.startTime);
+                    const endDt = new Date(session.endTime);
+                    const dateStr = startDt.toLocaleDateString();
+                    
+                    return {
+                        _uniqueId: `${session.id}_${index}`, // For React key
+                        id: session.resourceId, // For routing to /book/:id
+                        name: session.purpose ? session.purpose.split('\n')[0] : 'Lecture Session',
+                        type: 'LECTURE_HALL',
+                        status: 'ACTIVE',
+                        capacity: session.expectedAttendees,
+                        location: `${session.resourceName} | ${dateStr}`,
+                        availableFrom: session.startTime.split('T')[1].substring(0,5),
+                        availableTo: session.endTime.split('T')[1].substring(0,5),
+                        availableSeats: session.expectedAttendees, // Just placeholder, actual check is on book page
+                        bookedCount: 0
+                    };
+                });
 
-            const paging = { page, size: pageSize, sort };
+                let filtered = mappedResources;
+                if (filters.searchTerm) {
+                    const term = filters.searchTerm.toLowerCase();
+                    filtered = filtered.filter(r => r.name.toLowerCase().includes(term) || r.location.toLowerCase().includes(term));
+                }
+                if (filters.minCapacity) filtered = filtered.filter(r => r.capacity >= parseInt(filters.minCapacity));
+                if (filters.location) filtered = filtered.filter(r => r.location.toLowerCase().includes(filters.location.toLowerCase()));
 
-            const response = await resourceService.searchResources(params, paging);
-            const payload = response.data || response;
-            const pageContent = Array.isArray(payload) ? payload : (payload.content || []);
+                setTotalElements(filtered.length);
+                const pagedContent = filtered.slice(page * pageSize, (page + 1) * pageSize);
+                setTotalPages(Math.ceil(filtered.length / pageSize) || 1);
+                setResources(pagedContent);
 
-            setResources(pageContent);
-
-            if (Array.isArray(payload)) {
-                setTotalPages(1);
-                setTotalElements(pageContent.length);
             } else {
-                setTotalPages(Math.max(1, payload.totalPages || 1));
-                setTotalElements(payload.totalElements ?? pageContent.length);
+                // Original fetching logic for Admin/Lecturer/Tech
+                const params = {};
+                if (filters.searchTerm) params.name = filters.searchTerm;
+                if (filters.type) params.type = filters.type;
+                if (filters.minCapacity) params.minCapacity = parseInt(filters.minCapacity);
+                if (filters.location) params.location = filters.location;
+                if (filters.status) params.status = filters.status;
+
+                const paging = { page, size: pageSize, sort };
+
+                const response = await resourceService.searchResources(params, paging);
+                const payload = response.data || response;
+                const pageContent = Array.isArray(payload) ? payload : (payload.content || []);
+
+                // Enhance with _uniqueId
+                const enhancedContent = pageContent.map(r => ({ ...r, _uniqueId: r.id.toString() }));
+
+                setResources(enhancedContent);
+
+                if (Array.isArray(payload)) {
+                    setTotalPages(1);
+                    setTotalElements(pageContent.length);
+                } else {
+                    setTotalPages(Math.max(1, payload.totalPages || 1));
+                    setTotalElements(payload.totalElements ?? pageContent.length);
+                }
             }
         } catch (err) {
             console.error("Failed to fetch resources", err);
@@ -324,7 +372,7 @@ const ResourceListPage = () => {
 
                                     return (
                                         <div
-                                            key={res.id}
+                                            key={res._uniqueId}
                                             className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2"
                                         >
                                             {/* Card Header Image Area */}

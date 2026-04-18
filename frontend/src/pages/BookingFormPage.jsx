@@ -24,6 +24,10 @@ const BookingFormPage = () => {
     const [user, setUser] = useState(null);
     const [bookEntireRoom, setBookEntireRoom] = useState(false);
     const [selectedEquipment, setSelectedEquipment] = useState([]);
+    
+    // Student (USER) specific state
+    const [lecturerSessions, setLecturerSessions] = useState([]);
+    const [selectedSessionId, setSelectedSessionId] = useState('');
 
     useEffect(() => {
         const userStr = localStorage.getItem('user');
@@ -33,10 +37,19 @@ const BookingFormPage = () => {
     }, []);
 
     useEffect(() => {
-        const fetchResource = async () => {
+        const fetchResourceAndSessions = async () => {
             try {
                 const response = await resourceService.getById(id);
                 setResource(response.data);
+                
+                // Fetch sessions if it's a regular user
+                const userStr = localStorage.getItem('user');
+                const parsedUser = userStr && userStr !== "undefined" ? JSON.parse(userStr) : null;
+                
+                if (parsedUser?.role === 'USER') {
+                    const sessionRes = await bookingService.getLecturerSessions(id);
+                    setLecturerSessions(sessionRes.data || []);
+                }
             } catch (error) {
                 console.error("Failed to fetch resource", error);
                 setError("Resource not found");
@@ -44,7 +57,7 @@ const BookingFormPage = () => {
                 setLoading(false);
             }
         };
-        fetchResource();
+        fetchResourceAndSessions();
     }, [id]);
 
     const handleSubmit = async (e) => {
@@ -52,15 +65,28 @@ const BookingFormPage = () => {
         setSubmitting(true);
         setError(null);
 
-        // Combine date and time
-        const start = `${bookingDate}T${startTimeStr}:00`;
-        const end = `${bookingDate}T${endTimeStr}:00`;
+        let start;
+        let end;
+
+        if (user?.role === 'USER') {
+            const session = lecturerSessions.find(s => s.id.toString() === selectedSessionId.toString());
+            if (!session) {
+                setError("Please select a valid lecture session to join.");
+                setSubmitting(false);
+                return;
+            }
+            start = session.startTime;
+            end = session.endTime;
+        } else {
+            start = `${bookingDate}T${startTimeStr}:00`;
+            end = `${bookingDate}T${endTimeStr}:00`;
+        }
 
         let finalPurpose = purpose;
         if (selectedEquipment.length > 0) {
             finalPurpose += `\n\nRequested Additional Equipment: ${selectedEquipment.join(', ')}`;
         }
-        const finalAttendees = bookEntireRoom ? resource.capacity : parseInt(attendees);
+        const finalAttendees = user?.role === 'LECTURER' ? resource.capacity : parseInt(attendees);
 
         try {
             await bookingService.create({
@@ -144,80 +170,101 @@ const BookingFormPage = () => {
                             )}
 
                             <form onSubmit={handleSubmit} className="space-y-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* Date */}
-                                    <div className="space-y-2">
+                                {user?.role === 'USER' ? (
+                                    <div className="space-y-4">
                                         <label className="text-sm font-semibold text-white/70 flex items-center">
-                                            <Calendar className="w-4 h-4 mr-2 text-indigo-400" /> Date
+                                            <Calendar className="w-4 h-4 mr-2 text-indigo-400" /> Available Lecture Sessions
                                         </label>
-                                        <input 
-                                            type="date"
-                                            required
-                                            min={new Date().toISOString().split('T')[0]}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
-                                            value={bookingDate}
-                                            onChange={(e) => setBookingDate(e.target.value)}
-                                        />
+                                        {lecturerSessions.length === 0 ? (
+                                            <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-white/60 text-sm">
+                                                No upcoming lecture sessions available for this resource. You can only book seats for scheduled lectures.
+                                            </div>
+                                        ) : (
+                                            <select
+                                                required
+                                                value={selectedSessionId}
+                                                onChange={(e) => setSelectedSessionId(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all [&_option]:bg-slate-900"
+                                            >
+                                                <option value="">-- Select a Session to Join --</option>
+                                                {lecturerSessions.map(session => {
+                                                    const startDt = new Date(session.startTime);
+                                                    const endDt = new Date(session.endTime);
+                                                    return (
+                                                        <option key={session.id} value={session.id}>
+                                                            {startDt.toLocaleDateString()} ({startDt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {endDt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}) - {session.purpose?.split('\n')[0] || 'Lecture'}
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                        )}
                                     </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        {/* Date */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-white/70 flex items-center">
+                                                <Calendar className="w-4 h-4 mr-2 text-indigo-400" /> Date
+                                            </label>
+                                            <input 
+                                                type="date"
+                                                required
+                                                min={new Date().toISOString().split('T')[0]}
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                                                value={bookingDate}
+                                                onChange={(e) => setBookingDate(e.target.value)}
+                                            />
+                                        </div>
 
-                                    {/* Attendees */}
-                                    <div className="space-y-2">
+                                        {/* Start Time */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-white/70 flex items-center">
+                                                <Clock className="w-4 h-4 mr-2 text-indigo-400" /> Start Time
+                                            </label>
+                                            <input 
+                                                type="time"
+                                                required
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                                                value={startTimeStr}
+                                                onChange={(e) => setStartTimeStr(e.target.value)}
+                                            />
+                                        </div>
+
+                                        {/* End Time */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-white/70 flex items-center">
+                                                <Clock className="w-4 h-4 mr-2 text-indigo-400" /> End Time
+                                            </label>
+                                            <input 
+                                                type="time"
+                                                required
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
+                                                value={endTimeStr}
+                                                onChange={(e) => setEndTimeStr(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Attendees */}
+                                {user?.role !== 'LECTURER' && (
+                                    <div className="space-y-2 pt-2">
                                         <label className="text-sm font-semibold text-white/70 flex items-center justify-between">
                                             <div className="flex items-center">
-                                                <Users className="w-4 h-4 mr-2 text-indigo-400" /> Attendees
+                                                <Users className="w-4 h-4 mr-2 text-indigo-400" /> Seats Required
                                             </div>
-                                            {user?.role === 'LECTURER' && resource && ['LECTURE_HALL', 'LAB'].includes(resource.type) && (
-                                                <label className="flex items-center space-x-2 cursor-pointer bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        checked={bookEntireRoom}
-                                                        onChange={(e) => setBookEntireRoom(e.target.checked)}
-                                                        className="form-checkbox w-3.5 h-3.5 text-indigo-500 rounded bg-black/20 border-white/20 focus:ring-0 focus:ring-offset-0"
-                                                    />
-                                                    <span className="text-xs text-indigo-300 font-bold uppercase tracking-wider">Book Entire Room</span>
-                                                </label>
-                                            )}
                                         </label>
                                         <input 
                                             type="number"
                                             required
                                             min="1"
                                             max={resource.capacity}
-                                            disabled={bookEntireRoom}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                            value={bookEntireRoom ? resource.capacity : attendees}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                            value={attendees}
                                             onChange={(e) => setAttendees(e.target.value)}
                                         />
                                     </div>
-
-                                    {/* Start Time */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-white/70 flex items-center">
-                                            <Clock className="w-4 h-4 mr-2 text-indigo-400" /> Start Time
-                                        </label>
-                                        <input 
-                                            type="time"
-                                            required
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
-                                            value={startTimeStr}
-                                            onChange={(e) => setStartTimeStr(e.target.value)}
-                                        />
-                                    </div>
-
-                                    {/* End Time */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-white/70 flex items-center">
-                                            <Clock className="w-4 h-4 mr-2 text-indigo-400" /> End Time
-                                        </label>
-                                        <input 
-                                            type="time"
-                                            required
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"
-                                            value={endTimeStr}
-                                            onChange={(e) => setEndTimeStr(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* Purpose */}
                                 <div className="space-y-2">
