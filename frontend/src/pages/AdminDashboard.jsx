@@ -120,6 +120,8 @@ const AdminDashboard = () => {
             return u.role === 'USER';
         } else if (activeTab === 'TECHNICIANS') {
              return u.role === 'TECHNICIAN';
+        } else if (activeTab === 'LECTURERS') {
+             return u.role === 'LECTURER';
         }
         return true;
     });
@@ -127,6 +129,7 @@ const AdminDashboard = () => {
     const adminsCount = users.filter(u => u.role === 'ADMIN').length;
     const techniciansCount = users.filter(u => u.role === 'TECHNICIAN').length;
     const basicUsersCount = users.filter(u => u.role === 'USER').length;
+    const lecturersCount = users.filter(u => u.role === 'LECTURER').length;
 
     return (
         <AdminLayout activeSection="users">
@@ -171,6 +174,12 @@ const AdminDashboard = () => {
                             className={`flex-1 py-5 text-sm font-bold tracking-widest uppercase transition-all flex items-center justify-center ${activeTab === 'TECHNICIANS' ? 'text-white border-b-2 border-orange-400 bg-white/5' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}`}
                         >
                             <Wrench className="w-5 h-5 mr-2" /> Technicians ({techniciansCount})
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('LECTURERS')}
+                            className={`flex-1 py-5 text-sm font-bold tracking-widest uppercase transition-all flex items-center justify-center ${activeTab === 'LECTURERS' ? 'text-white border-b-2 border-green-400 bg-white/5' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}`}
+                        >
+                            <UsersIcon className="w-5 h-5 mr-2" /> Lecturers ({lecturersCount})
                         </button>
                     </div>
 
@@ -242,6 +251,7 @@ const AdminDashboard = () => {
                                                                 <option value="USER">USER</option>
                                                                 <option value="TECHNICIAN">TECHNICIAN</option>
                                                                 <option value="ADMIN">ADMIN</option>
+                                                                <option value="LECTURER">LECTURER</option>
                                                             </select>
                                                             <button onClick={() => handleSaveRole(u.id)} className="p-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 rounded-lg transition-colors">
                                                                 <Check className="w-4 h-4" />
@@ -254,6 +264,7 @@ const AdminDashboard = () => {
                                                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wider border ${
                                                             u.role === 'USER' ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' :
                                                             u.role === 'TECHNICIAN' ? 'bg-orange-500/10 text-orange-300 border-orange-500/20' :
+                                                            u.role === 'LECTURER' ? 'bg-green-500/10 text-green-300 border-green-500/20' :
                                                             'bg-purple-500/10 text-purple-300 border-purple-500/20'
                                                         }`}>
                                                             {u.role}

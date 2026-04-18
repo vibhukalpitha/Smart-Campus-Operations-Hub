@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { resourceService, bookingService } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Calendar, Clock, Users, FileText, ArrowLeft, Send } from 'lucide-react';
+import { Calendar, Clock, Users, FileText, ArrowLeft, Send, Wrench } from 'lucide-react';
 
 const BookingFormPage = () => {
     const { id } = useParams();
@@ -19,6 +19,18 @@ const BookingFormPage = () => {
     const [endTimeStr, setEndTimeStr] = useState('');
     const [purpose, setPurpose] = useState('');
     const [attendees, setAttendees] = useState(1);
+    
+    // Lecturer specific state
+    const [user, setUser] = useState(null);
+    const [bookEntireRoom, setBookEntireRoom] = useState(false);
+    const [selectedEquipment, setSelectedEquipment] = useState([]);
+
+    useEffect(() => {
+        const userStr = localStorage.getItem('user');
+        if (userStr && userStr !== "undefined") {
+            setUser(JSON.parse(userStr));
+        }
+    }, []);
 
     useEffect(() => {
         const fetchResource = async () => {
@@ -44,13 +56,19 @@ const BookingFormPage = () => {
         const start = `${bookingDate}T${startTimeStr}:00`;
         const end = `${bookingDate}T${endTimeStr}:00`;
 
+        let finalPurpose = purpose;
+        if (selectedEquipment.length > 0) {
+            finalPurpose += `\n\nRequested Additional Equipment: ${selectedEquipment.join(', ')}`;
+        }
+        const finalAttendees = bookEntireRoom ? resource.capacity : parseInt(attendees);
+
         try {
             await bookingService.create({
                 resourceId: parseInt(id),
                 startTime: start,
                 endTime: end,
-                purpose,
-                expectedAttendees: parseInt(attendees)
+                purpose: finalPurpose,
+                expectedAttendees: finalAttendees
             });
             navigate('/my-bookings');
         } catch (err) {
@@ -144,16 +162,30 @@ const BookingFormPage = () => {
 
                                     {/* Attendees */}
                                     <div className="space-y-2">
-                                        <label className="text-sm font-semibold text-white/70 flex items-center">
-                                            <Users className="w-4 h-4 mr-2 text-indigo-400" /> Attendees
+                                        <label className="text-sm font-semibold text-white/70 flex items-center justify-between">
+                                            <div className="flex items-center">
+                                                <Users className="w-4 h-4 mr-2 text-indigo-400" /> Attendees
+                                            </div>
+                                            {user?.role === 'LECTURER' && resource && ['LECTURE_HALL', 'LAB'].includes(resource.type) && (
+                                                <label className="flex items-center space-x-2 cursor-pointer bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/30">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={bookEntireRoom}
+                                                        onChange={(e) => setBookEntireRoom(e.target.checked)}
+                                                        className="form-checkbox w-3.5 h-3.5 text-indigo-500 rounded bg-black/20 border-white/20 focus:ring-0 focus:ring-offset-0"
+                                                    />
+                                                    <span className="text-xs text-indigo-300 font-bold uppercase tracking-wider">Book Entire Room</span>
+                                                </label>
+                                            )}
                                         </label>
                                         <input 
                                             type="number"
                                             required
                                             min="1"
                                             max={resource.capacity}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                                            value={attendees}
+                                            disabled={bookEntireRoom}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            value={bookEntireRoom ? resource.capacity : attendees}
                                             onChange={(e) => setAttendees(e.target.value)}
                                         />
                                     </div>
@@ -201,6 +233,34 @@ const BookingFormPage = () => {
                                         onChange={(e) => setPurpose(e.target.value)}
                                     ></textarea>
                                 </div>
+
+                                {/* Equipment (Lecturer Only) */}
+                                {user?.role === 'LECTURER' && (
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-semibold text-white/70 flex items-center">
+                                            <Wrench className="w-4 h-4 mr-2 text-indigo-400" /> Additional Requirements
+                                        </label>
+                                        <div className="flex flex-wrap gap-4">
+                                            {['Projector', 'Camera', 'White Board'].map((item) => (
+                                                <label key={item} className="flex items-center space-x-2 cursor-pointer bg-white/5 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 hover:border-indigo-500/30 transition-all">
+                                                    <input 
+                                                        type="checkbox"
+                                                        className="form-checkbox w-4 h-4 text-indigo-500 rounded bg-black/20 border-white/20 focus:ring-0 focus:ring-offset-0"
+                                                        checked={selectedEquipment.includes(item)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedEquipment([...selectedEquipment, item]);
+                                                            } else {
+                                                                setSelectedEquipment(selectedEquipment.filter(i => i !== item));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <span className="text-sm font-medium text-white/80">{item}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <button 
                                     type="submit"
