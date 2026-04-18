@@ -45,7 +45,33 @@ public class BookingService {
         );
 
         if (!conflicts.isEmpty()) {
-            throw new RuntimeException("Scheduling conflict: This resource is already booked for the selected time range.");
+            boolean isLecturing = user.getRole().name().equals("LECTURER") || user.getRole().name().equals("ADMIN");
+            if (isLecturing || user.getRole().name().equals("TECHNICIAN")) {
+                throw new RuntimeException("Scheduling conflict: This resource is already booked for the selected time range.");
+            } else {
+                // For Student (USER): They must be booking into an existing Lecturer session.
+                boolean hasLecturerSession = conflicts.stream()
+                        .anyMatch(b -> b.getUser().getRole().name().equals("LECTURER"));
+                if (!hasLecturerSession) {
+                    throw new RuntimeException("Scheduling conflict: Students can only book seats during scheduled Lecturer sessions.");
+                }
+
+                // Calculate current used seats by students in this time slot
+                int usedSeats = conflicts.stream()
+                        .filter(b -> b.getUser().getRole().name().equals("USER") && 
+                                     (b.getStatus() == BookingStatus.APPROVED || b.getStatus() == BookingStatus.PENDING))
+                        .mapToInt(Booking::getExpectedAttendees)
+                        .sum();
+
+                if (usedSeats + request.getExpectedAttendees() > resource.getCapacity()) {
+                    throw new RuntimeException("Scheduling conflict: Not enough seats available in this lecture session.");
+                }
+            }
+        } else {
+            // No conflicts. But if it's a student, they CANNOT book unless it's a lecturer session!
+            if (user.getRole().name().equals("USER")) {
+                throw new RuntimeException("Students are only allowed to book seats during existing scheduled Lecturer sessions.");
+            }
         }
 
         Booking booking = Booking.builder()
@@ -85,6 +111,20 @@ public class BookingService {
 
     public List<BookingResponse> getAllBookings() {
         return bookingRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<BookingResponse> getLecturerSessions(Long resourceId) {
+        return bookingRepository.findFutureLecturerBookings(resourceId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<BookingResponse> getAllLecturerSessions() {
+        return bookingRepository.findAllFutureLecturerBookings()
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
