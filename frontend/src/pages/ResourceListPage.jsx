@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { resourceService } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { MapPin, Users, Info, Calendar, Clock3, Search, Filter, CheckCircle, XCircle, X } from 'lucide-react';
+import { MapPin, Users, Info, Calendar, Clock3, Filter, CheckCircle, XCircle, X, ArrowLeft } from 'lucide-react';
+
+const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'PROJECTOR', 'CAMERA', 'EQUIPMENT'];
 
 const ResourceListPage = () => {
+    const { type: typeParam } = useParams();
+    const lockedType = typeParam && RESOURCE_TYPES.includes(typeParam) ? typeParam : null;
+    const isTypeLocked = Boolean(lockedType);
+
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -14,7 +20,7 @@ const ResourceListPage = () => {
     // Combined filter states
     const [filters, setFilters] = useState({
         searchTerm: '',
-        type: null,
+        type: lockedType,
         minCapacity: null,
         location: null,
         status: 'ACTIVE'
@@ -25,7 +31,21 @@ const ResourceListPage = () => {
     const [pageSize] = useState(9);
     const [totalPages, setTotalPages] = useState(1);
     const [totalElements, setTotalElements] = useState(0);
-    const [types] = useState(['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'PROJECTOR', 'CAMERA', 'EQUIPMENT']);
+    const types = RESOURCE_TYPES;
+
+    useEffect(() => {
+        setPage(0);
+        setFilters(prev => {
+            if (prev.type === lockedType) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                type: lockedType
+            };
+        });
+    }, [lockedType]);
 
     useEffect(() => {
         fetchResources();
@@ -79,7 +99,7 @@ const ResourceListPage = () => {
     const resetFilters = () => {
         setFilters({
             searchTerm: '',
-            type: null,
+            type: lockedType,
             minCapacity: null,
             location: null,
             status: 'ACTIVE'
@@ -90,11 +110,14 @@ const ResourceListPage = () => {
 
     const activeFilterCount =
         (filters.searchTerm ? 1 : 0) +
-        (filters.type ? 1 : 0) +
+        (filters.type && !isTypeLocked ? 1 : 0) +
         (filters.minCapacity ? 1 : 0) +
         (filters.location ? 1 : 0) +
         (filters.status && filters.status !== 'ACTIVE' ? 1 : 0);
     const formatType = (type) => type.replace(/_/g, ' ');
+    const filterGridClass = isTypeLocked
+        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4'
+        : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4';
 
     const formatTime = (timeValue) => {
         if (!timeValue) return null;
@@ -151,10 +174,23 @@ const ResourceListPage = () => {
                 <div className="relative z-10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-6">
                         <div>
+                            {isTypeLocked && (
+                                <button
+                                    onClick={() => navigate('/resources/catalog')}
+                                    className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-blue-200 text-xs font-semibold uppercase tracking-wider transition-colors"
+                                >
+                                    <ArrowLeft className="w-3.5 h-3.5" />
+                                    Back to Types
+                                </button>
+                            )}
                             <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
-                                Campus Resources
+                                {isTypeLocked ? `${formatType(lockedType)} Resources` : 'Campus Resources'}
                             </h2>
-                            <p className="text-blue-200/50 mt-2">Browse and book facilities for your needs</p>
+                            <p className="text-blue-200/50 mt-2">
+                                {isTypeLocked
+                                    ? 'Browse and book resources in this category'
+                                    : 'Browse and book facilities for your needs'}
+                            </p>
                         </div>
                         {activeFilterCount > 0 && (
                             <button
@@ -174,7 +210,7 @@ const ResourceListPage = () => {
                             <h3 className="font-semibold text-white">Filters</h3>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                        <div className={filterGridClass}>
                             {/* Search */}
                             <div>
                                 <label className="block text-xs font-medium text-blue-300 mb-2">Search</label>
@@ -187,20 +223,21 @@ const ResourceListPage = () => {
                                 />
                             </div>
 
-                            {/* Type Filter */}
-                            <div>
-                                <label className="block text-xs font-medium text-blue-300 mb-2">Type</label>
-                                <select
-                                    className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer [&_option]:bg-slate-900"
-                                    value={filters.type || ''}
-                                    onChange={(e) => handleFilterChange('type', e.target.value)}
-                                >
-                                    <option value="">All Types</option>
-                                    {types.map(t => (
-                                        <option key={t} value={t}>{formatType(t)}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            {!isTypeLocked && (
+                                <div>
+                                    <label className="block text-xs font-medium text-blue-300 mb-2">Type</label>
+                                    <select
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer [&_option]:bg-slate-900"
+                                        value={filters.type || ''}
+                                        onChange={(e) => handleFilterChange('type', e.target.value)}
+                                    >
+                                        <option value="">All Types</option>
+                                        {types.map(t => (
+                                            <option key={t} value={t}>{formatType(t)}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             {/* Min Capacity Filter */}
                             <div>

@@ -9,14 +9,20 @@ const Dashboard = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
-        
-        if (!token || !storedUser) {
-            navigate('/login');
-        } else {
-            setUser(JSON.parse(storedUser));
-        }
+        const loadUser = () => {
+            const storedUser = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            if (!token || !storedUser) {
+                navigate('/login');
+            } else {
+                setUser(JSON.parse(storedUser));
+            }
+        };
+
+        loadUser();
+
+        window.addEventListener('storage', loadUser);
+        return () => window.removeEventListener('storage', loadUser);
     }, [navigate]);
 
     const handleLogout = () => {
@@ -104,10 +110,14 @@ const Dashboard = () => {
                                 <p className="text-sm font-semibold text-white group-hover:text-indigo-200 transition-colors">{user.firstName} {user.lastName}</p>
                                 <p className="text-xs text-indigo-300/70 capitalize">{user.role}</p>
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-indigo-500/20">
-                                <div className="w-full h-full bg-[#0a0f1c] rounded-full flex items-center justify-center text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
-                                    {user.firstName?.[0] || 'U'}{user.lastName?.[0] || ''}
-                                </div>
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-indigo-500/20 overflow-hidden relative">
+                                {user.profilePicture ? (
+                                    <img src={`http://localhost:8080/uploads/profile-pictures/${user.profilePicture}`} alt="Avatar" className="w-full h-full rounded-full object-cover relative z-10" />
+                                ) : (
+                                    <div className="w-full h-full bg-[#0a0f1c] rounded-full flex items-center justify-center text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
+                                        {user.firstName?.[0] || 'U'}{user.lastName?.[0] || ''}
+                                    </div>
+                                )}
                             </div>
                         </Link>
                     </div>
@@ -160,7 +170,7 @@ const Dashboard = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {/* Book a Resource */}
                                 <div 
-                                    onClick={() => navigate('/resources')}
+                                    onClick={() => navigate('/resources/catalog')}
                                     className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group cursor-pointer relative overflow-hidden"
                                 >
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full group-hover:bg-blue-500/20 transition-all duration-500"></div>

@@ -35,7 +35,8 @@ api.interceptors.response.use(
 
 export const authService = {
     login: (credentials) => api.post('/auth/login', credentials),
-    register: (userData) => api.post('/auth/register', userData)
+    register: (userData) => api.post('/auth/register', userData),
+    githubLogin: (code) => api.post(`/auth/github?code=${code}`)
 };
 
 export const notificationService = {

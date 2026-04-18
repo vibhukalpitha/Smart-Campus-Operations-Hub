@@ -20,6 +20,7 @@ public class UserService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
+    private final FileStorageService fileStorageService;
 
     public List<UserDto> getAllUsers() {
         return userRepository.findAll().stream()
@@ -74,6 +75,30 @@ public class UserService {
         return mapToDto(user);
     }
 
+    public UserDto uploadProfilePicture(String email, org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        String fileName = fileStorageService.saveProfilePicture(file);
+        if (fileName != null) {
+            user.setProfilePicture(fileName);
+            userRepository.save(user);
+        }
+        return mapToDto(user);
+    }
+
+    public UserDto uploadProfilePictureById(Long id, org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        String fileName = fileStorageService.saveProfilePicture(file);
+        if (fileName != null) {
+            user.setProfilePicture(fileName);
+            userRepository.save(user);
+        }
+        return mapToDto(user);
+    }
+
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new RuntimeException("User not found");
@@ -89,6 +114,7 @@ public class UserService {
                 .lastName(user.getLastName())
                 .role(user.getRole())
                 .createdAt(user.getCreatedAt())
+                .profilePicture(user.getProfilePicture()) // mapped string from entity
                 .build();
     }
 }

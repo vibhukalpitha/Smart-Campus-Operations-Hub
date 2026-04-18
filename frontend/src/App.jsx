@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -10,6 +10,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import ResourceListPage from './pages/ResourceListPage';
+import ResourceTypeCatalogPage from './pages/ResourceTypeCatalogPage';
 import BookingFormPage from './pages/BookingFormPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import AdminBookingsPage from './pages/AdminBookingsPage';
@@ -34,7 +35,9 @@ function App() {
           {/* Protected User Routes */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/resources" element={<ResourceListPage />} />
+          <Route path="/resources/catalog" element={<ResourceTypeCatalogPage />} />
+          <Route path="/resources" element={<Navigate to="/resources/catalog" replace />} />
+          <Route path="/resources/type/:type" element={<ResourceListPage />} />
           <Route path="/book/:id" element={<BookingFormPage />} />
           <Route path="/my-bookings" element={<MyBookingsPage />} />
 

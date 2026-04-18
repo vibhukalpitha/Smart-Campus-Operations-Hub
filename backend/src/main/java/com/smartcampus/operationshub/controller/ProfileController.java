@@ -21,4 +21,13 @@ public class ProfileController {
         String currentUserEmail = authentication.getName(); // Spring Security puts the email in principal name
         return ResponseEntity.ok(userService.updateMyProfile(currentUserEmail, request));
     }
+
+    @PostMapping("/picture")
+    public ResponseEntity<UserDto> uploadProfilePicture(@RequestParam("file") org.springframework.web.multipart.MultipartFile file, Authentication authentication) {
+        try {
+            return ResponseEntity.ok(userService.uploadProfilePicture(authentication.getName(), file));
+        } catch (java.io.IOException e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
 }
