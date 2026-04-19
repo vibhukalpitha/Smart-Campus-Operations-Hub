@@ -76,5 +76,15 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "GitHub Login Failed: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(@RequestParam("code") String code) {
+        try {
+            return ResponseEntity.ok(authService.googleLogin(code));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", "Google Login Failed: " + e.getMessage()));
+        }
+    }
 }
 
