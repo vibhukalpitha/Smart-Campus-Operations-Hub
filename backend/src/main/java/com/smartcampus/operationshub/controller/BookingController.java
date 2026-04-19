@@ -63,4 +63,16 @@ public class BookingController {
     public ResponseEntity<List<Map<String, Object>>> getCalendarEvents(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(bookingService.getBookingsForCalendar(user));
     }
+
+    // GET: Future Lecturer Sessions for a Resource
+    @GetMapping("/resource/{resourceId}/sessions")
+    public ResponseEntity<List<BookingResponse>> getLecturerSessions(@PathVariable Long resourceId) {
+        return ResponseEntity.ok(bookingService.getLecturerSessions(resourceId));
+    }
+
+    // GET: All active Future Lecturer Sessions
+    @GetMapping("/sessions/active")
+    public ResponseEntity<List<BookingResponse>> getAllLecturerSessions() {
+        return ResponseEntity.ok(bookingService.getAllLecturerSessions());
+    }
 }

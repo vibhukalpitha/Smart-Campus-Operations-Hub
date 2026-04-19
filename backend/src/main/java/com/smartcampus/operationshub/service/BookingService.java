@@ -45,7 +45,33 @@ public class BookingService {
         );
 
         if (!conflicts.isEmpty()) {
-            throw new RuntimeException("Scheduling conflict: This resource is already booked for the selected time range.");
+            boolean isLecturing = user.getRole().name().equals("LECTURER") || user.getRole().name().equals("ADMIN");
+            if (isLecturing || user.getRole().name().equals("TECHNICIAN")) {
+                throw new RuntimeException("Scheduling conflict: This resource is already booked for the selected time range.");
+            } else {
+                // For Student (USER): They must be booking into an existing Lecturer session.
+                boolean hasLecturerSession = conflicts.stream()
+                        .anyMatch(b -> b.getUser().getRole().name().equals("LECTURER"));
+                if (!hasLecturerSession) {
+                    throw new RuntimeException("Scheduling conflict: Students can only book seats during scheduled Lecturer sessions.");
+                }
+
+                // Calculate current used seats by students in this time slot
+                int usedSeats = conflicts.stream()
+                        .filter(b -> b.getUser().getRole().name().equals("USER") && 
+                                     (b.getStatus() == BookingStatus.APPROVED || b.getStatus() == BookingStatus.PENDING))
+                        .mapToInt(Booking::getExpectedAttendees)
+                        .sum();
+
+                if (usedSeats + request.getExpectedAttendees() > resource.getCapacity()) {
+                    throw new RuntimeException("Scheduling conflict: Not enough seats available in this lecture session.");
+                }
+            }
+        } else {
+            // No conflicts. But if it's a student, they CANNOT book unless it's a lecturer session!
+            if (user.getRole().name().equals("USER")) {
+                throw new RuntimeException("Students are only allowed to book seats during existing scheduled Lecturer sessions.");
+            }
         }
 
         Booking booking = Booking.builder()
@@ -90,6 +116,20 @@ public class BookingService {
                 .collect(Collectors.toList());
     }
 
+    public List<BookingResponse> getLecturerSessions(Long resourceId) {
+        return bookingRepository.findFutureLecturerBookings(resourceId)
+                .stream()
+                .map(this::mapLecturerSessionToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<BookingResponse> getAllLecturerSessions() {
+        return bookingRepository.findAllFutureLecturerBookings()
+                .stream()
+                .map(this::mapLecturerSessionToResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public BookingResponse updateStatus(Long id, BookingStatus status, String reason) {
         Booking booking = bookingRepository.findById(id)
@@ -131,6 +171,7 @@ public class BookingService {
                 .id(booking.getId())
                 .resourceId(booking.getResource().getId())
                 .resourceName(booking.getResource().getName())
+                .resourceType(booking.getResource().getType())
                 .userId(booking.getUser().getId())
                 .userEmail(booking.getUser().getEmail())
                 .startTime(booking.getStartTime())
@@ -141,6 +182,24 @@ public class BookingService {
                 .rejectionReason(booking.getRejectionReason())
                 .createdAt(booking.getCreatedAt())
                 .build();
+    }
+
+    private BookingResponse mapLecturerSessionToResponse(Booking booking) {
+        BookingResponse response = mapToResponse(booking);
+        List<Booking> overlaps = bookingRepository.findOverlappingBookings(
+                booking.getResource().getId(),
+                booking.getStartTime(),
+                booking.getEndTime()
+        );
+        int usedSeats = overlaps.stream()
+                .filter(b -> b.getUser().getRole().name().equals("USER") && 
+                             (b.getStatus() == BookingStatus.APPROVED || b.getStatus() == BookingStatus.PENDING))
+                .mapToInt(Booking::getExpectedAttendees)
+                .sum();
+                
+        response.setBookedSeats(usedSeats);
+        response.setAvailableSeats(booking.getExpectedAttendees() - usedSeats);
+        return response;
     }
 
     public List<java.util.Map<String, Object>> getBookingsForCalendar(User user) {
