@@ -39,12 +39,18 @@ const TicketListPage = () => {
         }
     };
 
-    const filteredTickets = tickets.filter(ticket => {
-        const matchesSearch = ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            ticket.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const filteredTickets = Array.isArray(tickets) ? tickets.filter(ticket => {
+        if (!ticket) return false;
+        
+        const description = (ticket.description || '').toLowerCase();
+        const category = (ticket.category || '').toLowerCase();
+        const query = (searchQuery || '').toLowerCase();
+        
+        const matchesSearch = description.includes(query) || category.includes(query);
         const matchesStatus = statusFilter === 'ALL' || ticket.status === statusFilter;
+        
         return matchesSearch && matchesStatus;
-    });
+    }) : [];
 
     return (
         <div className="min-h-screen bg-[#0a0f1c] text-white flex flex-col font-sans relative overflow-hidden">

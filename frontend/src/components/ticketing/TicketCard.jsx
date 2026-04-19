@@ -24,6 +24,10 @@ const TicketCard = ({ ticket }) => {
         }
     };
 
+    const status = ticket.status || 'OPEN';
+    const priority = ticket.priority || 'LOW';
+    const ticketId = ticket.id ? ticket.id.toString().padStart(4, '0') : '0000';
+
     return (
         <div 
             onClick={() => navigate(`/tickets/${ticket.id}`)}
@@ -33,18 +37,18 @@ const TicketCard = ({ ticket }) => {
             
             <div className="flex justify-between items-start mb-4">
                 <div className="flex space-x-2">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority}
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getPriorityColor(priority)}`}>
+                        {priority}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(ticket.status)}`}>
-                        {ticket.status.replace('_', ' ')}
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(status)}`}>
+                        {status.replace('_', ' ')}
                     </span>
                 </div>
-                <p className="text-white/20 text-[10px] font-mono">#{ticket.id.toString().padStart(4, '0')}</p>
+                <p className="text-white/20 text-[10px] font-mono">#{ticketId}</p>
             </div>
 
             <h3 className="text-lg font-bold text-white mb-2 line-clamp-1 group-hover:text-indigo-300 transition-colors">
-                {ticket.description}
+                {ticket.description || 'No description provided'}
             </h3>
             
             <div className="flex items-center text-white/40 text-xs mb-6">
