@@ -74,14 +74,14 @@ const ResourceListPage = () => {
                         _uniqueId: `${session.id}_${index}`, // For React key
                         id: session.resourceId, // For routing to /book/:id
                         name: session.purpose ? session.purpose.split('\n')[0] : 'Lecture Session',
-                        type: 'LECTURE_HALL',
+                        type: session.resourceType || 'LECTURE_HALL',
                         status: 'ACTIVE',
                         capacity: session.expectedAttendees,
                         location: `${session.resourceName} | ${dateStr}`,
                         availableFrom: session.startTime.split('T')[1].substring(0,5),
                         availableTo: session.endTime.split('T')[1].substring(0,5),
-                        availableSeats: session.expectedAttendees, // Just placeholder, actual check is on book page
-                        bookedCount: 0
+                        availableSeats: session.availableSeats != null ? session.availableSeats : session.expectedAttendees,
+                        bookedCount: session.bookedSeats != null ? session.bookedSeats : 0
                     };
                 });
 
@@ -89,6 +89,9 @@ const ResourceListPage = () => {
                 if (filters.searchTerm) {
                     const term = filters.searchTerm.toLowerCase();
                     filtered = filtered.filter(r => r.name.toLowerCase().includes(term) || r.location.toLowerCase().includes(term));
+                }
+                if (filters.type) {
+                    filtered = filtered.filter(r => r.type === filters.type);
                 }
                 if (filters.minCapacity) filtered = filtered.filter(r => r.capacity >= parseInt(filters.minCapacity));
                 if (filters.location) filtered = filtered.filter(r => r.location.toLowerCase().includes(filters.location.toLowerCase()));
