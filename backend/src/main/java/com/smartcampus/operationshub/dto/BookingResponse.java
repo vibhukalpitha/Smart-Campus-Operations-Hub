@@ -12,6 +12,7 @@ public class BookingResponse {
     private Long id;
     private Long resourceId;
     private String resourceName;
+    private com.smartcampus.operationshub.entity.ResourceType resourceType;
     private Long userId;
     private String userEmail;
     private LocalDateTime startTime;
@@ -21,4 +22,8 @@ public class BookingResponse {
     private BookingStatus status;
     private String rejectionReason;
     private LocalDateTime createdAt;
+    
+    // Additional computed fields for Lecturer Sessions
+    private Integer bookedSeats;
+    private Integer availableSeats;
 }

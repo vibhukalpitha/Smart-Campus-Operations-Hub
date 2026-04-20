@@ -119,14 +119,14 @@ public class BookingService {
     public List<BookingResponse> getLecturerSessions(Long resourceId) {
         return bookingRepository.findFutureLecturerBookings(resourceId)
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::mapLecturerSessionToResponse)
                 .collect(Collectors.toList());
     }
 
     public List<BookingResponse> getAllLecturerSessions() {
         return bookingRepository.findAllFutureLecturerBookings()
                 .stream()
-                .map(this::mapToResponse)
+                .map(this::mapLecturerSessionToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -171,6 +171,7 @@ public class BookingService {
                 .id(booking.getId())
                 .resourceId(booking.getResource().getId())
                 .resourceName(booking.getResource().getName())
+                .resourceType(booking.getResource().getType())
                 .userId(booking.getUser().getId())
                 .userEmail(booking.getUser().getEmail())
                 .startTime(booking.getStartTime())
@@ -181,6 +182,24 @@ public class BookingService {
                 .rejectionReason(booking.getRejectionReason())
                 .createdAt(booking.getCreatedAt())
                 .build();
+    }
+
+    private BookingResponse mapLecturerSessionToResponse(Booking booking) {
+        BookingResponse response = mapToResponse(booking);
+        List<Booking> overlaps = bookingRepository.findOverlappingBookings(
+                booking.getResource().getId(),
+                booking.getStartTime(),
+                booking.getEndTime()
+        );
+        int usedSeats = overlaps.stream()
+                .filter(b -> b.getUser().getRole().name().equals("USER") && 
+                             (b.getStatus() == BookingStatus.APPROVED || b.getStatus() == BookingStatus.PENDING))
+                .mapToInt(Booking::getExpectedAttendees)
+                .sum();
+                
+        response.setBookedSeats(usedSeats);
+        response.setAvailableSeats(booking.getExpectedAttendees() - usedSeats);
+        return response;
     }
 
     public List<java.util.Map<String, Object>> getBookingsForCalendar(User user) {
