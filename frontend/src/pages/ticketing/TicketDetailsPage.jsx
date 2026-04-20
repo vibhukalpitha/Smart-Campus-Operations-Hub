@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ticketService } from '../../services/api';
+import { ticketService, userService } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { uploadToCloudinary } from '../../utils/cloudinary';
@@ -36,16 +36,35 @@ const TicketDetailsPage = () => {
     const [updating, setUpdating] = useState(false);
     const [user, setUser] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null); // For Lightbox
+    
+    // Assignment states
+    const [technicians, setTechnicians] = useState([]);
+    const [selectedTechnician, setSelectedTechnician] = useState('');
+    const [isAssigning, setIsAssigning] = useState(false);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            if (parsedUser.role === 'ADMIN') {
+                fetchTechnicians();
+            }
         }
         fetchTicketDetails();
         fetchComments();
         fetchImages();
     }, [id]);
+
+    const fetchTechnicians = async () => {
+        try {
+            const response = await userService.getAllUsers();
+            const techList = response.data.filter(u => u.role === 'TECHNICIAN');
+            setTechnicians(techList);
+        } catch (err) {
+            console.error("Failed to fetch technicians:", err);
+        }
+    };
 
     const fetchTicketDetails = async () => {
         setLoading(true);
@@ -127,6 +146,26 @@ const TicketDetailsPage = () => {
         } catch (err) {
             console.error("Failed to delete ticket:", err);
             alert("Failed to delete ticket. You may not have permission.");
+        }
+    };
+
+    const handleAssignTechnician = async () => {
+        if (!selectedTechnician) return;
+        
+        const confirms = window.confirm("Are you sure you want to officially assign this technician? If the ticket is currently OPEN, it will automatically switch to IN_PROGRESS.");
+        if (!confirms) return;
+
+        setIsAssigning(true);
+        try {
+            await ticketService.assignTechnician(id, selectedTechnician);
+            alert("Technician assigned successfully!");
+            fetchTicketDetails(); // Refresh ticket
+            setSelectedTechnician('');
+        } catch (err) {
+            console.error("Failed to assign technician:", err);
+            alert(err.response?.data?.message || "Failed to assign technician.");
+        } finally {
+            setIsAssigning(false);
         }
     };
 
@@ -337,6 +376,43 @@ const TicketDetailsPage = () => {
                                     />
                                 </div>
                             </div>
+
+                            {/* Assign Technician (ADMIN ONLY) */}
+                            {user?.role === 'ADMIN' && ticket && ticket.status !== 'CLOSED' && ticket.status !== 'RESOLVED' && (
+                                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8">
+                                    <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                                        <User className="w-5 h-5 mr-3 text-emerald-400" />
+                                        Assign Technician
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {ticket.assignedTo && (
+                                            <div className="text-sm text-indigo-300 bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 mb-4 animate-in fade-in zoom-in duration-300">
+                                                <span className="font-bold text-emerald-400 block mb-1">Currently Assigned To:</span>
+                                                Technician ID: {ticket.assignedTo}
+                                            </div>
+                                        )}
+                                        <select 
+                                            value={selectedTechnician}
+                                            onChange={(e) => setSelectedTechnician(e.target.value)}
+                                            className="w-full bg-[#0a0f1c] border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Select a technician...</option>
+                                            {technicians.map(tech => (
+                                                <option key={tech.id} value={tech.id}>
+                                                    {tech.firstName} {tech.lastName} ({tech.email})
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button 
+                                            onClick={handleAssignTechnician}
+                                            disabled={!selectedTechnician || isAssigning}
+                                            className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white shadow-lg shadow-emerald-500/20 px-6 py-4 rounded-2xl font-bold tracking-widest uppercase transition-all flex justify-center items-center"
+                                        >
+                                            {isAssigning ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Assignment'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Status Helper */}
                             <div className="bg-gradient-to-br from-blue-600/40 to-indigo-600/40 border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden group">

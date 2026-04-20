@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TicketActionServiceImpl implements TicketActionService {
 
     private final TicketRepository ticketRepository;
+    private final com.smartcampus.operationshub.repository.UserRepository userRepository;
 
     @Override
     @Transactional
@@ -37,9 +38,22 @@ public class TicketActionServiceImpl implements TicketActionService {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
 
+        if (ticket.getStatus() == TicketStatus.CLOSED || ticket.getStatus() == TicketStatus.RESOLVED) {
+            throw new IllegalStateException("Cannot assign a technician to a closed or resolved ticket.");
+        }
+
+        var technician = userRepository.findById(technicianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Technician not found with id: " + technicianId));
+        
+        if (!technician.getRole().name().equals("TECHNICIAN")) {
+            throw new IllegalArgumentException("User is not a TECHNICIAN");
+        }
+
         ticket.setAssignedTo(technicianId);
         // Requirement: assigning a technician sets status to IN_PROGRESS
-        ticket.setStatus(TicketStatus.IN_PROGRESS);
+        if (ticket.getStatus() == TicketStatus.OPEN) {
+            ticket.setStatus(TicketStatus.IN_PROGRESS);
+        }
 
         return mapToResponse(ticketRepository.save(ticket));
     }
