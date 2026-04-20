@@ -128,6 +128,7 @@ export const ticketService = {
     createTicket: (data) => api.post('/tickets', data),
     getAllTickets: () => api.get('/tickets'),
     getMyTickets: () => api.get('/tickets/my'),
+    getAssignedTickets: () => api.get('/tickets/assigned'),
     getTicketById: (id) => api.get(`/tickets/${id}`),
     updateTicket: (id, data) => api.put(`/tickets/${id}`, data),
     deleteTicket: (id) => api.delete(`/tickets/${id}`),

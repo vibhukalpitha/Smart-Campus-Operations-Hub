@@ -22,7 +22,10 @@ import {
     ChevronRight,
     Trash2,
     X,
-    Image as ImageIcon
+    Image as ImageIcon,
+    ZoomIn,
+    ZoomOut,
+    MapPin
 } from 'lucide-react';
 
 const TicketDetailsPage = () => {
@@ -36,6 +39,7 @@ const TicketDetailsPage = () => {
     const [updating, setUpdating] = useState(false);
     const [user, setUser] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null); // For Lightbox
+    const [zoomLevel, setZoomLevel] = useState(1);
     
     // Assignment states
     const [technicians, setTechnicians] = useState([]);
@@ -70,9 +74,23 @@ const TicketDetailsPage = () => {
         setLoading(true);
         try {
             const response = await ticketService.getTicketById(id);
-            // Wrapped in TicketingResponse
-            setTicket(response.data.data);
-            setError(null);
+            const fetchedTicket = response.data.data;
+            
+            // Client-side authorization check to prevent data exposure
+            let isAuthorized = true;
+            if (user && user.role === 'USER' && String(fetchedTicket.createdBy) !== String(user.id)) {
+                isAuthorized = false;
+            } else if (user && user.role === 'TECHNICIAN' && String(fetchedTicket.assignedTo) !== String(user.id)) {
+                isAuthorized = false;
+            }
+            
+            if (!isAuthorized) {
+                setTicket(null);
+                setError("You do not have permission to view this ticket.");
+            } else {
+                setTicket(fetchedTicket);
+                setError(null);
+            }
         } catch (err) {
             console.error("Failed to fetch ticket details:", err);
             setError("Could not retrieve ticket information. It may have been deleted or you may not have permission to view it.");
@@ -265,12 +283,18 @@ const TicketDetailsPage = () => {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 py-8 border-y border-white/5">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-y-8 gap-x-6 py-8 border-y border-white/5">
                                         <div className="space-y-1">
                                             <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
                                                 <Tag className="w-3 h-3 mr-1" /> Category
                                             </p>
                                             <p className="font-semibold text-white">{ticket.category}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
+                                                <MapPin className="w-3 h-3 mr-1" /> Location/Resource
+                                            </p>
+                                            <p className="font-semibold text-white">{ticket.location || (ticket.resourceId ? `Resource ID: ${ticket.resourceId}` : 'Not Specified')}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
@@ -280,15 +304,21 @@ const TicketDetailsPage = () => {
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
-                                                <User className="w-3 h-3 mr-1" /> Created By
-                                            </p>
-                                            <p className="font-semibold text-white">{ticket.creatorName || 'Anonymous'}</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
                                                 <Phone className="w-3 h-3 mr-1" /> Contact
                                             </p>
                                             <p className="font-semibold text-white truncate">{ticket.contactDetails || 'None Provided'}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
+                                                <Shield className="w-3 h-3 mr-1" /> Assigned Tech
+                                            </p>
+                                            <p className="font-semibold text-white">{ticket.assignedTo ? `Tech ID: ${ticket.assignedTo}` : 'Unassigned'}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
+                                                <User className="w-3 h-3 mr-1" /> Created By
+                                            </p>
+                                            <p className="font-semibold text-white">{ticket.createdBy ? `User ID: ${ticket.createdBy}` : 'Anonymous'}</p>
                                         </div>
                                     </div>
 
@@ -438,27 +468,68 @@ const TicketDetailsPage = () => {
             {selectedImage && (
                 <div 
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300"
-                    onClick={() => setSelectedImage(null)}
+                    onClick={() => {
+                        setSelectedImage(null);
+                        setZoomLevel(1);
+                    }}
                 >
-                    <div className="absolute inset-0 bg-[#0a0f1c]/90 backdrop-blur-xl"></div>
+                    <div className="absolute inset-0 bg-[#0a0f1c]/95 backdrop-blur-2xl"></div>
+                    
+                    {/* Controls */}
+                    <div className="absolute top-6 right-6 flex items-center space-x-4 z-50">
+                        <div className="bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/20 flex items-center" onClick={e => e.stopPropagation()}>
+                            <button 
+                                onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.25))}
+                                className="p-2 hover:bg-white/20 rounded-full text-white/80 hover:text-white transition-all"
+                                title="Zoom Out"
+                            >
+                                <ZoomOut className="w-5 h-5" />
+                            </button>
+                            <div className="px-3 text-xs font-bold font-mono text-white/50 w-16 text-center">
+                                {Math.round(zoomLevel * 100)}%
+                            </div>
+                            <button 
+                                onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.25))}
+                                className="p-2 hover:bg-white/20 rounded-full text-white/80 hover:text-white transition-all"
+                                title="Zoom In"
+                            >
+                                <ZoomIn className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedImage(null);
+                                setZoomLevel(1);
+                            }}
+                            className="bg-white/10 backdrop-blur-md p-3 rounded-full hover:bg-rose-500/50 hover:text-white border border-white/20 text-white/80 transition-all group"
+                        >
+                            <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                        </button>
+                    </div>
+
                     <div 
-                        className="relative max-w-5xl w-full max-h-full flex flex-col items-center animate-in zoom-in-95 duration-300"
+                        className="relative max-w-6xl w-full h-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-300 overflow-hidden"
                         onClick={e => e.stopPropagation()}
                     >
-                        <button 
-                            onClick={() => setSelectedImage(null)}
-                            className="absolute -top-12 right-0 p-2 text-white/60 hover:text-white transition-colors"
+                        <div 
+                            className="w-full h-full flex items-center justify-center overflow-auto cursor-move custom-scrollbar"
+                            style={{ padding: '40px' }}
                         >
-                            <X className="w-8 h-8" />
-                        </button>
-                        <img 
-                            src={selectedImage} 
-                            alt="Evidence Detail" 
-                            className="w-full h-auto max-h-[80vh] object-contain rounded-3xl shadow-2xl border border-white/10"
-                        />
-                        <div className="mt-6 flex items-center space-x-3 bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl">
-                            <ImageIcon className="w-5 h-5 text-indigo-400" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-white/80">Evidence Attachment</span>
+                            <img 
+                                src={selectedImage} 
+                                alt="Evidence Detail" 
+                                className="max-w-none transition-transform duration-300 ease-out rounded-xl shadow-2xl origin-center"
+                                style={{ 
+                                    transform: `scale(${zoomLevel})`,
+                                    maxHeight: zoomLevel <= 1 ? '85vh' : 'none',
+                                    maxWidth: zoomLevel <= 1 ? '100%' : 'none'
+                                }}
+                            />
+                        </div>
+                        <div className="absolute bottom-8 flex items-center space-x-3 bg-[#0a0f1c]/80 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full shadow-2xl">
+                            <ImageIcon className="w-4 h-4 text-indigo-400" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-white/90">Detailed Evidence View</span>
                         </div>
                     </div>
                 </div>

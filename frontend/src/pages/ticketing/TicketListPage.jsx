@@ -37,11 +37,14 @@ const TicketListPage = () => {
         setLoading(true);
         try {
             const storedUser = JSON.parse(localStorage.getItem('user'));
-            const isAdminOrTech = storedUser?.role === 'ADMIN' || storedUser?.role === 'TECHNICIAN';
-            
-            const response = isAdminOrTech 
-                ? await ticketService.getAllTickets() 
-                : await ticketService.getMyTickets();
+            let response;
+            if (storedUser?.role === 'ADMIN') {
+                response = await ticketService.getAllTickets();
+            } else if (storedUser?.role === 'TECHNICIAN') {
+                response = await ticketService.getAssignedTickets();
+            } else {
+                response = await ticketService.getMyTickets();
+            }
                 
             // Wrapped in TicketingResponse
             setTickets(response.data.data || []);
