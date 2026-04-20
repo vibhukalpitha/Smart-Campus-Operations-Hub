@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ticketService, resourceService } from '../../services/api';
 import { uploadToCloudinary } from '../../utils/cloudinary';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 import { 
     Send, 
     ArrowLeft, 
@@ -196,8 +198,11 @@ const CreateTicketPage = () => {
             <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
             <div className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-7000"></div>
 
-            <main className="flex-1 overflow-y-auto z-10 p-4 md:p-8 flex items-center justify-center">
-                <div className="max-w-2xl w-full">
+            <Header />
+
+            <main className="flex-1 overflow-y-auto z-10 flex flex-col">
+                <div className="p-4 md:p-8 flex-1 flex items-center justify-center">
+                    <div className="max-w-2xl w-full mt-4">
                     {/* Header Action */}
                     <button 
                         onClick={() => navigate(-1)}
@@ -478,6 +483,11 @@ const CreateTicketPage = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+                </div>
+
+                <div className="shrink-0 mt-auto pt-12 w-full max-w-4xl mx-auto px-4 md:px-8 pb-8">
+                    <Footer />
                 </div>
             </main>
         </div>

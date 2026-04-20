@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ticketService } from '../../services/api';
 import TicketCard from '../../components/ticketing/TicketCard';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 import { 
     Plus, 
     Search, 
@@ -69,10 +71,13 @@ const TicketListPage = () => {
         <div className="min-h-screen bg-[#0a0f1c] text-white flex flex-col font-sans relative overflow-hidden">
             {/* Animated Background Gradients */}
             <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
+            <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
             <div className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
 
-            <main className="flex-1 overflow-y-auto z-10 p-4 md:p-8">
-                <div className="max-w-6xl mx-auto space-y-8">
+            <Header />
+
+            <main className="flex-1 overflow-y-auto z-10 flex flex-col">
+                <div className="p-4 md:p-8 flex-1 flex flex-col max-w-6xl mx-auto w-full space-y-8">
                     {/* Header Actions */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="space-y-2">
@@ -102,8 +107,8 @@ const TicketListPage = () => {
                     </div>
 
                     {/* Search and Filters */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-2 relative group">
+                    <div className="space-y-4">
+                        <div className="relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-300/40 group-focus-within:text-indigo-400 transition-colors" />
                             <input 
                                 type="text"
@@ -113,19 +118,20 @@ const TicketListPage = () => {
                                 className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
                             />
                         </div>
-                        <div className="relative group">
-                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-300/40" />
-                            <select 
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer"
-                            >
-                                <option value="ALL">All Status</option>
-                                <option value="OPEN">Open</option>
-                                <option value="IN_PROGRESS">In Progress</option>
-                                <option value="RESOLVED">Resolved</option>
-                                <option value="CLOSED">Closed</option>
-                            </select>
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map(status => (
+                                <button
+                                    key={status}
+                                    onClick={() => setStatusFilter(status)}
+                                    className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+                                        statusFilter === status 
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-400' 
+                                            : 'bg-white/5 text-indigo-300/60 hover:bg-white/10 hover:text-white border border-white/10'
+                                    }`}
+                                >
+                                    {status.replace('_', ' ')}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -176,6 +182,11 @@ const TicketListPage = () => {
                             )}
                         </div>
                     )}
+                </div>
+                
+                {/* Footer Section inside main scroller */}
+                <div className="shrink-0 mt-auto pt-12 w-full max-w-6xl mx-auto px-4 md:px-8">
+                    <Footer />
                 </div>
             </main>
         </div>

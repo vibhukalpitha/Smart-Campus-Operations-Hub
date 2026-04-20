@@ -59,7 +59,7 @@ function App() {
           <Route
             path="/tickets/create"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['USER']}>
                 <CreateTicketPage />
               </ProtectedRoute>
             }

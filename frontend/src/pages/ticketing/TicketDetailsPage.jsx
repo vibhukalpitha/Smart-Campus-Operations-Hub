@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ticketService } from '../../services/api';
+import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 import { uploadToCloudinary } from '../../utils/cloudinary';
 import CommentSection from '../../components/ticketing/CommentSection';
 import ImageUpload from '../../components/ticketing/ImageUpload';
@@ -18,7 +20,9 @@ import {
     Phone,
     Settings,
     ChevronRight,
-    Trash2
+    Trash2,
+    X,
+    Image as ImageIcon
 } from 'lucide-react';
 
 const TicketDetailsPage = () => {
@@ -182,8 +186,10 @@ const TicketDetailsPage = () => {
             <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
             <div className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
 
-            <main className="flex-1 overflow-y-auto z-10 p-4 md:p-8">
-                <div className="max-w-6xl mx-auto space-y-8">
+            <Header />
+
+            <main className="flex-1 overflow-y-auto z-10 flex flex-col">
+                <div className="p-4 md:p-8 flex-1 flex flex-col max-w-6xl mx-auto w-full space-y-8">
                     {/* Header Action */}
                     <button 
                         onClick={() => navigate('/tickets')}
@@ -344,6 +350,11 @@ const TicketDetailsPage = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+                
+                {/* Footer Section inside main scroller */}
+                <div className="shrink-0 mt-auto pt-12 w-full max-w-4xl mx-auto px-4 md:px-8">
+                    <Footer />
                 </div>
             </main>
 
