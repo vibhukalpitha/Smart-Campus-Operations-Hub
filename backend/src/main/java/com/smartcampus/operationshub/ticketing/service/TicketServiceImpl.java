@@ -5,6 +5,8 @@ import com.smartcampus.operationshub.ticketing.constant.TicketStatus;
 import com.smartcampus.operationshub.ticketing.dto.TicketRequestDTO;
 import com.smartcampus.operationshub.ticketing.dto.TicketResponseDTO;
 import com.smartcampus.operationshub.ticketing.entity.Ticket;
+import com.smartcampus.operationshub.ticketing.repository.CommentRepository;
+import com.smartcampus.operationshub.ticketing.repository.TicketImageRepository;
 import com.smartcampus.operationshub.ticketing.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
+    private final CommentRepository commentRepository;
+    private final TicketImageRepository ticketImageRepository;
 
     @Override
     @Transactional
@@ -90,6 +94,10 @@ public class TicketServiceImpl implements TicketService {
         if (!ticket.getCreatedBy().equals(userId)) {
             throw new AccessDeniedException("You do not have permission to delete this ticket.");
         }
+
+        // Clean up associated comments and images to prevent orphan records
+        commentRepository.deleteAllByTicketId(id);
+        ticketImageRepository.deleteAllByTicketId(id);
 
         ticketRepository.delete(ticket);
     }

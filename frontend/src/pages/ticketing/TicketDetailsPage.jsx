@@ -17,7 +17,8 @@ import {
     Calendar,
     Phone,
     Settings,
-    ChevronRight
+    ChevronRight,
+    Trash2
 } from 'lucide-react';
 
 const TicketDetailsPage = () => {
@@ -126,7 +127,7 @@ const TicketDetailsPage = () => {
     };
 
     const isAdminOrTechnician = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
-    const isOwner = user?.id === ticket?.createdBy;
+    const isOwner = String(user?.id) === String(ticket?.createdBy);
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -290,8 +291,9 @@ const TicketDetailsPage = () => {
                                                         </button>
                                                         <button 
                                                             onClick={handleDeleteTicket}
-                                                            className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                                                            className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center"
                                                         >
+                                                            <Trash2 className="w-3.5 h-3.5 mr-2" />
                                                             Delete Ticket
                                                         </button>
                                                     </>
