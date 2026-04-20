@@ -129,6 +129,8 @@ export const ticketService = {
     getAllTickets: () => api.get('/tickets'),
     getMyTickets: () => api.get('/tickets/my'),
     getTicketById: (id) => api.get(`/tickets/${id}`),
+    updateTicket: (id, data) => api.put(`/tickets/${id}`, data),
+    deleteTicket: (id) => api.delete(`/tickets/${id}`),
     updateStatus: (id, status) => api.patch(`/tickets/${id}/status?status=${status}`),
     assignTechnician: (id, technicianId) => api.patch(`/tickets/${id}/assign?technicianId=${technicianId}`),
     addComment: (ticketId, data) => api.post(`/tickets/${ticketId}/comments`, data),
@@ -142,6 +144,9 @@ export const ticketService = {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
     },
+    addImageUrl: (ticketId, imageUrl) => api.post(`/tickets/${ticketId}/images/url`, imageUrl, {
+        headers: { 'Content-Type': 'text/plain' }
+    }),
     getImages: (ticketId) => api.get(`/tickets/${ticketId}/images`)
 };
 

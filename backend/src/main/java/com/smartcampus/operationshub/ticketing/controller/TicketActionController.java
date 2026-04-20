@@ -5,6 +5,7 @@ import com.smartcampus.operationshub.ticketing.dto.TicketResponseDTO;
 import com.smartcampus.operationshub.ticketing.service.TicketActionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -22,6 +23,7 @@ public class TicketActionController {
      * PATCH /api/tickets/{id}/status: Update ticket status.
      */
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
     public ResponseEntity<TicketResponseDTO> updateStatus(
             @PathVariable Long id,
             @RequestParam TicketStatus status) {
@@ -32,6 +34,7 @@ public class TicketActionController {
      * PATCH /api/tickets/{id}/assign: Assign a technician to a ticket.
      */
     @PatchMapping("/{id}/assign")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TicketResponseDTO> assignTechnician(
             @PathVariable Long id,
             @RequestParam Long technicianId) {

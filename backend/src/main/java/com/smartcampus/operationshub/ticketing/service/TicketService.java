@@ -1,5 +1,6 @@
 package com.smartcampus.operationshub.ticketing.service;
 
+import com.smartcampus.operationshub.ticketing.constant.TicketStatus;
 import com.smartcampus.operationshub.ticketing.dto.TicketRequestDTO;
 import com.smartcampus.operationshub.ticketing.dto.TicketResponseDTO;
 
@@ -28,12 +29,12 @@ public interface TicketService {
     /**
      * Update an existing ticket.
      */
-    TicketResponseDTO updateTicket(Long id, TicketRequestDTO request);
+    TicketResponseDTO updateTicket(Long id, TicketRequestDTO request, Long userId);
     
     /**
      * Delete a ticket by its ID.
      */
-    void deleteTicket(Long id);
+    void deleteTicket(Long id, Long userId);
     
     /**
      * Get all tickets created by a specific user.
@@ -44,4 +45,9 @@ public interface TicketService {
      * Get all tickets assigned to a specific user.
      */
     List<TicketResponseDTO> getTicketsByAssignee(Long userId);
+
+    /**
+     * Update the status of a ticket.
+     */
+    TicketResponseDTO updateStatus(Long id, TicketStatus status);
 }

@@ -45,6 +45,12 @@ public class Ticket {
     @Column(name = "assigned_to")
     private Long assignedTo;
 
+    @Column(name = "resource_id")
+    private Long resourceId;
+
+    @Column(name = "location")
+    private String location;
+
     @Column(name = "contact_details")
     private String contactDetails;
 

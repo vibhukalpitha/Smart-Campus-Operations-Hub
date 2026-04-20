@@ -21,19 +21,32 @@ const TicketListPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
 
+    const [user, setUser] = useState(null);
+
     useEffect(() => {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
         fetchTickets();
     }, []);
 
     const fetchTickets = async () => {
         setLoading(true);
         try {
-            const response = await ticketService.getMyTickets();
-            setTickets(response.data);
+            const storedUser = JSON.parse(localStorage.getItem('user'));
+            const isAdminOrTech = storedUser?.role === 'ADMIN' || storedUser?.role === 'TECHNICIAN';
+            
+            const response = isAdminOrTech 
+                ? await ticketService.getAllTickets() 
+                : await ticketService.getMyTickets();
+                
+            // Wrapped in TicketingResponse
+            setTickets(response.data.data || []);
             setError(null);
         } catch (err) {
             console.error("Failed to fetch tickets:", err);
-            setError("Could not load your tickets. Please check your connection and try again.");
+            setError("Could not load tickets. Please check your connection and try again.");
         } finally {
             setLoading(false);
         }
@@ -77,13 +90,15 @@ const TicketListPage = () => {
                             <p className="text-indigo-300/60 font-medium text-lg">Manage and track your campus maintenance requests</p>
                         </div>
 
-                        <Link 
-                            to="/tickets/create"
-                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center space-x-3 shadow-xl shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                        >
-                            <Plus className="w-5 h-5" />
-                            <span className="uppercase tracking-widest text-sm">Create New Ticket</span>
-                        </Link>
+                        {user?.role === 'USER' && (
+                            <Link 
+                                to="/tickets/create"
+                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center space-x-3 shadow-xl shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                <Plus className="w-5 h-5" />
+                                <span className="uppercase tracking-widest text-sm">Create New Ticket</span>
+                            </Link>
+                        )}
                     </div>
 
                     {/* Search and Filters */}

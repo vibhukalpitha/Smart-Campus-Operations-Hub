@@ -27,8 +27,9 @@ public class TicketImageServiceImpl implements TicketImageService {
     private final TicketImageRepository ticketImageRepository;
     private final TicketRepository ticketRepository;
 
-    private static final String UPLOAD_DIR = "uploads/tickets/";
+    private static final List<String> ALLOWED_EXTENSIONS = List.of(".jpg", ".jpeg", ".png");
     private static final int MAX_IMAGES_PER_TICKET = 3;
+    private static final String UPLOAD_DIR = "uploads/tickets/";
 
     @Override
     @Transactional
@@ -44,28 +45,34 @@ public class TicketImageServiceImpl implements TicketImageService {
             throw new IllegalArgumentException("Maximum of " + MAX_IMAGES_PER_TICKET + " images allowed per ticket.");
         }
 
-        // 3. Prepare upload directory
+        // 3. Validate format
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.lastIndexOf(".") != -1) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        }
+        
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("Unsupported file format. Please use JPG, JPEG, or PNG.");
+        }
+
+        // 4. Prepare upload directory
         try {
             Path uploadPath = Paths.get(UPLOAD_DIR);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            // 4. Generate unique filename
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.lastIndexOf(".") != -1) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
+            // 5. Generate unique filename
             String newFilename = UUID.randomUUID().toString() + extension;
             Path filePath = uploadPath.resolve(newFilename);
 
-            // 5. Save file metadata to DB and copy file
+            // 6. Save file metadata to DB and copy file
             Files.copy(file.getInputStream(), filePath);
 
             TicketImage ticketImage = TicketImage.builder()
                     .ticketId(ticketId)
-                    .filePath(filePath.toString())
+                    .imageUrl(filePath.toString()) // Storing local path as URL for legacy support
                     .build();
 
             return ticketImageRepository.save(ticketImage);
@@ -73,6 +80,28 @@ public class TicketImageServiceImpl implements TicketImageService {
         } catch (IOException e) {
             throw new RuntimeException("Could not store image. Error: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional
+    public TicketImage addImageUrl(Long ticketId, String imageUrl) {
+        // 1. Verify ticket exists
+        if (!ticketRepository.existsById(ticketId)) {
+            throw new ResourceNotFoundException("Ticket not found with id: " + ticketId);
+        }
+
+        // 2. Enforce 3-image limit
+        long count = ticketImageRepository.countByTicketId(ticketId);
+        if (count >= MAX_IMAGES_PER_TICKET) {
+            throw new IllegalArgumentException("Maximum of " + MAX_IMAGES_PER_TICKET + " images allowed per ticket.");
+        }
+
+        TicketImage ticketImage = TicketImage.builder()
+                .ticketId(ticketId)
+                .imageUrl(imageUrl)
+                .build();
+
+        return ticketImageRepository.save(ticketImage);
     }
 
     @Override

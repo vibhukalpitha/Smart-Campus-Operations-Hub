@@ -40,4 +40,14 @@ public class TicketImageController {
     public ResponseEntity<List<TicketImage>> getImages(@PathVariable Long id) {
         return ResponseEntity.ok(ticketImageService.getImagesByTicketId(id));
     }
+
+    /**
+     * POST /api/tickets/{id}/images/url: Add an image URL (e.g. Cloudinary) for a ticket.
+     */
+    @PostMapping("/{id}/images/url")
+    public ResponseEntity<TicketImage> addImageUrl(
+            @PathVariable Long id,
+            @RequestBody String imageUrl) {
+        return new ResponseEntity<>(ticketImageService.addImageUrl(id, imageUrl), HttpStatus.CREATED);
+    }
 }

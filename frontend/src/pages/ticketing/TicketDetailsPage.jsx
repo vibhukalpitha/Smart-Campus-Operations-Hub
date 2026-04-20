@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ticketService } from '../../services/api';
+import { uploadToCloudinary } from '../../utils/cloudinary';
 import CommentSection from '../../components/ticketing/CommentSection';
 import ImageUpload from '../../components/ticketing/ImageUpload';
 import { 
@@ -12,6 +13,7 @@ import {
     CheckCircle2, 
     Loader2, 
     User,
+    Edit3,
     Calendar,
     Phone,
     Settings,
@@ -28,6 +30,7 @@ const TicketDetailsPage = () => {
     const [error, setError] = useState(null);
     const [updating, setUpdating] = useState(false);
     const [user, setUser] = useState(null);
+    const [selectedImage, setSelectedImage] = useState(null); // For Lightbox
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -43,7 +46,8 @@ const TicketDetailsPage = () => {
         setLoading(true);
         try {
             const response = await ticketService.getTicketById(id);
-            setTicket(response.data);
+            // Wrapped in TicketingResponse
+            setTicket(response.data.data);
             setError(null);
         } catch (err) {
             console.error("Failed to fetch ticket details:", err);
@@ -52,20 +56,20 @@ const TicketDetailsPage = () => {
             setLoading(false);
         }
     };
-
     const fetchComments = async () => {
         try {
             const response = await ticketService.getComments(id);
-            setComments(response.data);
+            // Wrapped in TicketingResponse
+            setComments(response.data.data || []);
         } catch (err) {
             console.error("Failed to fetch comments:", err);
         }
     };
-
     const fetchImages = async () => {
         try {
             const response = await ticketService.getImages(id);
-            setImages(response.data);
+            // Wrapped in TicketingResponse
+            setImages(response.data.data || []);
         } catch (err) {
             console.error("Failed to fetch images:", err);
         }
@@ -82,10 +86,12 @@ const TicketDetailsPage = () => {
 
     const handleImageUpload = async (file) => {
         try {
-            await ticketService.uploadImage(id, file);
+            const imageUrl = await uploadToCloudinary(file);
+            await ticketService.addImageUrl(id, imageUrl);
             fetchImages(); // Refresh images
         } catch (err) {
             console.error("Failed to upload image:", err);
+            setError("Failed to upload image. Please ensure it's a valid image format.");
             throw err; // Let component handle error state
         }
     };
@@ -99,12 +105,28 @@ const TicketDetailsPage = () => {
             await fetchTicketDetails(); // Refresh data
         } catch (err) {
             console.error("Failed to update status:", err);
+            // Better error handling
+            setError("You are not authorized to update the status of this ticket.");
         } finally {
             setUpdating(false);
         }
     };
 
+    const handleDeleteTicket = async () => {
+        if (!isOwner) return;
+        if (!window.confirm("Are you sure you want to delete this ticket? This action cannot be undone.")) return;
+
+        try {
+            await ticketService.deleteTicket(id);
+            navigate('/tickets');
+        } catch (err) {
+            console.error("Failed to delete ticket:", err);
+            alert("Failed to delete ticket. You may not have permission.");
+        }
+    };
+
     const isAdminOrTechnician = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
+    const isOwner = user?.id === ticket?.createdBy;
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -224,32 +246,56 @@ const TicketDetailsPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Action Panel for Admins/Technicians */}
-                                    {isAdminOrTechnician && (
+                                    {/* Action Panel */}
+                                    {(isAdminOrTechnician || isOwner) && (
                                         <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-3xl p-6 space-y-4">
                                             <div className="flex items-center space-x-2 text-indigo-300 mb-2">
                                                 <Settings className="w-4 h-4" />
                                                 <span className="text-xs font-bold uppercase tracking-widest">Management Controls</span>
                                             </div>
                                             <div className="flex flex-wrap gap-3">
-                                                <button 
-                                                    disabled={updating || ticket.status === 'IN_PROGRESS'}
-                                                    onClick={() => handleStatusUpdate('IN_PROGRESS')}
-                                                    className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
-                                                        ticket.status === 'IN_PROGRESS'
-                                                            ? 'bg-indigo-600/50 text-white cursor-not-allowed'
-                                                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
-                                                    }`}
-                                                >
-                                                    {updating && ticket.status !== 'IN_PROGRESS' ? 'Updating...' : 'Start Progress'}
-                                                </button>
-                                                <button 
-                                                    disabled={updating || ticket.status === 'RESOLVED'}
-                                                    onClick={() => handleStatusUpdate('RESOLVED')}
-                                                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all"
-                                                >
-                                                    Mark as Resolved
-                                                </button>
+                                                {/* Tech/Admin Actions */}
+                                                {isAdminOrTechnician && (
+                                                    <>
+                                                        <button 
+                                                            disabled={updating || ticket.status === 'IN_PROGRESS'}
+                                                            onClick={() => handleStatusUpdate('IN_PROGRESS')}
+                                                            className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
+                                                                ticket.status === 'IN_PROGRESS'
+                                                                    ? 'bg-indigo-600/50 text-white cursor-not-allowed'
+                                                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
+                                                            }`}
+                                                        >
+                                                            {updating && ticket.status !== 'IN_PROGRESS' ? 'Updating...' : 'Start Progress'}
+                                                        </button>
+                                                        <button 
+                                                            disabled={updating || ticket.status === 'RESOLVED'}
+                                                            onClick={() => handleStatusUpdate('RESOLVED')}
+                                                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all"
+                                                        >
+                                                            Mark as Resolved
+                                                        </button>
+                                                    </>
+                                                )}
+                                                
+                                                {/* Owner Actions */}
+                                                {isOwner && (
+                                                    <>
+                                                        <button 
+                                                            onClick={() => navigate(`/tickets/${id}/edit`)}
+                                                            className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center"
+                                                        >
+                                                            <Edit3 className="w-3.5 h-3.5 mr-2" />
+                                                            Edit Ticket
+                                                        </button>
+                                                        <button 
+                                                            onClick={handleDeleteTicket}
+                                                            className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                                                        >
+                                                            Delete Ticket
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -279,6 +325,7 @@ const TicketDetailsPage = () => {
                                         ticketId={id} 
                                         existingImages={images} 
                                         onUpload={handleImageUpload} 
+                                        onImageClick={setSelectedImage}
                                     />
                                 </div>
                             </div>
@@ -297,6 +344,36 @@ const TicketDetailsPage = () => {
                     </div>
                 </div>
             </main>
+
+            {/* Premium Lightbox Modal */}
+            {selectedImage && (
+                <div 
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <div className="absolute inset-0 bg-[#0a0f1c]/90 backdrop-blur-xl"></div>
+                    <div 
+                        className="relative max-w-5xl w-full max-h-full flex flex-col items-center animate-in zoom-in-95 duration-300"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button 
+                            onClick={() => setSelectedImage(null)}
+                            className="absolute -top-12 right-0 p-2 text-white/60 hover:text-white transition-colors"
+                        >
+                            <X className="w-8 h-8" />
+                        </button>
+                        <img 
+                            src={selectedImage} 
+                            alt="Evidence Detail" 
+                            className="w-full h-auto max-h-[80vh] object-contain rounded-3xl shadow-2xl border border-white/10"
+                        />
+                        <div className="mt-6 flex items-center space-x-3 bg-white/5 backdrop-blur-md border border-white/10 px-6 py-3 rounded-2xl">
+                            <ImageIcon className="w-5 h-5 text-indigo-400" />
+                            <span className="text-xs font-bold uppercase tracking-widest text-white/80">Evidence Attachment</span>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
