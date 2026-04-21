@@ -60,6 +60,12 @@ public class Ticket {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "resolution_note", columnDefinition = "TEXT")
+    private String resolutionNote;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -40,4 +40,17 @@ public class TicketActionController {
             @RequestParam Long technicianId) {
         return ResponseEntity.ok(ticketActionService.assignTechnician(id, technicianId));
     }
+
+    /**
+     * PATCH /api/tickets/{id}/resolve: Resolve a ticket with a note.
+     */
+    @PatchMapping("/{id}/resolve")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public ResponseEntity<TicketResponseDTO> resolveTicket(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> payload,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.smartcampus.operationshub.entity.User user) {
+        String note = payload.get("resolutionNote");
+        return ResponseEntity.ok(ticketActionService.resolveTicket(id, user.getId(), note));
+    }
 }

@@ -24,4 +24,13 @@ public interface TicketActionService {
      * @return Updated ticket as DTO
      */
     TicketResponseDTO assignTechnician(Long id, Long technicianId);
+
+    /**
+     * Resolve a ticket.
+     * @param id Ticket ID
+     * @param technicianId ID of the technician (User ID)
+     * @param resolutionNote Required textual note detailing the fix
+     * @return Updated ticket as DTO
+     */
+    TicketResponseDTO resolveTicket(Long id, Long technicianId, String resolutionNote);
 }

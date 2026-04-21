@@ -40,6 +40,8 @@ const TicketDetailsPage = () => {
     const [user, setUser] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null); // For Lightbox
     const [zoomLevel, setZoomLevel] = useState(1);
+    const [showResolveModal, setShowResolveModal] = useState(false);
+    const [resolutionNoteText, setResolutionNoteText] = useState('');
     
     // Assignment states
     const [technicians, setTechnicians] = useState([]);
@@ -164,6 +166,26 @@ const TicketDetailsPage = () => {
         } catch (err) {
             console.error("Failed to delete ticket:", err);
             alert("Failed to delete ticket. You may not have permission.");
+        }
+    };
+
+    const handleResolveSubmit = async () => {
+        if (!resolutionNoteText.trim()) {
+            alert("Resolution note is required.");
+            return;
+        }
+        setUpdating(true);
+        try {
+            await ticketService.resolveTicket(id, resolutionNoteText);
+            setShowResolveModal(false);
+            setResolutionNoteText('');
+            alert("Ticket resolved successfully!");
+            await fetchTicketDetails();
+        } catch (err) {
+            console.error("Failed to resolve ticket:", err);
+            alert(err.response?.data?.message || "Failed to resolve ticket.");
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -330,28 +352,34 @@ const TicketDetailsPage = () => {
                                                 <span className="text-xs font-bold uppercase tracking-widest">Management Controls</span>
                                             </div>
                                             <div className="flex flex-wrap gap-3">
-                                                {/* Tech/Admin Actions */}
+                                                {/* Start Progress Action */}
                                                 {isAdminOrTechnician && (
-                                                    <>
-                                                        <button 
-                                                            disabled={updating || ticket.status === 'IN_PROGRESS'}
-                                                            onClick={() => handleStatusUpdate('IN_PROGRESS')}
-                                                            className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
-                                                                ticket.status === 'IN_PROGRESS'
-                                                                    ? 'bg-indigo-600/50 text-white cursor-not-allowed'
-                                                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
-                                                            }`}
-                                                        >
-                                                            {updating && ticket.status !== 'IN_PROGRESS' ? 'Updating...' : 'Start Progress'}
-                                                        </button>
-                                                        <button 
-                                                            disabled={updating || ticket.status === 'RESOLVED'}
-                                                            onClick={() => handleStatusUpdate('RESOLVED')}
-                                                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all"
-                                                        >
-                                                            Mark as Resolved
-                                                        </button>
-                                                    </>
+                                                    <button 
+                                                        disabled={updating || ticket.status === 'IN_PROGRESS' || ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
+                                                        onClick={() => handleStatusUpdate('IN_PROGRESS')}
+                                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
+                                                            ticket.status === 'IN_PROGRESS'
+                                                                ? 'bg-indigo-600/50 text-white cursor-not-allowed'
+                                                                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
+                                                        }`}
+                                                    >
+                                                        {updating && ticket.status !== 'IN_PROGRESS' ? 'Updating...' : 'Start Progress'}
+                                                    </button>
+                                                )}
+
+                                                {/* Technician ONLY Resolve Action */}
+                                                {user?.role === 'TECHNICIAN' && String(ticket.assignedTo) === String(user.id) && (
+                                                    <button 
+                                                        disabled={updating || ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' || ticket.status === 'REJECTED'}
+                                                        onClick={() => setShowResolveModal(true)}
+                                                        className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${
+                                                            ['RESOLVED', 'CLOSED', 'REJECTED'].includes(ticket.status)
+                                                                ? 'bg-emerald-600/50 text-white cursor-not-allowed hidden'
+                                                                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20'
+                                                        }`}
+                                                    >
+                                                        Mark as Resolved
+                                                    </button>
                                                 )}
                                                 
                                                 {/* Owner Actions */}
@@ -378,6 +406,28 @@ const TicketDetailsPage = () => {
                                     )}
                                 </div>
                             </div>
+                            
+                            {/* Resolution Notes Display */}
+                            {ticket.resolutionNote && (
+                                <div className="bg-emerald-500/5 backdrop-blur-2xl border border-emerald-500/20 rounded-[2.5rem] p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="flex items-center justify-between text-emerald-400 mb-6">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                                <CheckCircle2 className="w-6 h-6" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white">Resolution Notes</h3>
+                                        </div>
+                                        {ticket.resolvedAt && (
+                                            <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">
+                                                {new Date(ticket.resolvedAt).toLocaleString()}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="bg-[#0a0f1c]/50 rounded-2xl p-6 text-emerald-100/80 leading-relaxed text-sm whitespace-pre-wrap border border-white/5">
+                                        {ticket.resolutionNote}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Discussion Area */}
                             <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 md:p-12">
@@ -530,6 +580,51 @@ const TicketDetailsPage = () => {
                         <div className="absolute bottom-8 flex items-center space-x-3 bg-[#0a0f1c]/80 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full shadow-2xl">
                             <ImageIcon className="w-4 h-4 text-indigo-400" />
                             <span className="text-xs font-bold uppercase tracking-widest text-white/90">Detailed Evidence View</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Resolve Ticket Modal */}
+            {showResolveModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0a0f1c]/90 backdrop-blur-xl" onClick={() => setShowResolveModal(false)}></div>
+                    <div className="relative bg-[#0d1225] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-white flex items-center">
+                                <CheckCircle2 className="w-6 h-6 text-emerald-400 mr-3" />
+                                Resolve Ticket
+                            </h3>
+                            <button onClick={() => setShowResolveModal(false)} className="p-2 bg-white/5 hover:bg-rose-500/80 hover:text-white rounded-full transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <label className="text-xs font-bold text-indigo-300/60 uppercase tracking-widest">
+                                Resolution Notes <span className="text-rose-500">*</span>
+                            </label>
+                            <textarea 
+                                value={resolutionNoteText}
+                                onChange={(e) => setResolutionNoteText(e.target.value)}
+                                placeholder="Describe the steps taken to resolve this issue..."
+                                rows="5"
+                                className="w-full bg-[#0a0f1c] border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all resize-none"
+                            ></textarea>
+                            
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl mt-4">
+                                <p className="text-xs text-emerald-400/80 leading-relaxed font-bold">
+                                    Submitting this will explicitly set the ticket state to RESOLVED and notify the creator. Ensure the steps are detailed and correct.
+                                </p>
+                            </div>
+
+                            <button 
+                                onClick={handleResolveSubmit}
+                                disabled={updating || !resolutionNoteText.trim()}
+                                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white shadow-lg shadow-emerald-600/20 px-6 py-4 rounded-2xl font-bold tracking-widest uppercase transition-all flex justify-center items-center mt-6"
+                            >
+                                {updating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Resolution'}
+                            </button>
                         </div>
                     </div>
                 </div>

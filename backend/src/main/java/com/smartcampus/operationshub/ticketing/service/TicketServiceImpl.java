@@ -143,6 +143,8 @@ public class TicketServiceImpl implements TicketService {
                 .contactDetails(ticket.getContactDetails())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
+                .resolutionNote(ticket.getResolutionNote())
+                .resolvedAt(ticket.getResolvedAt())
                 .build();
     }
 }

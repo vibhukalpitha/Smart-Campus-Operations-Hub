@@ -29,4 +29,6 @@ public class TicketResponseDTO {
     private String contactDetails;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String resolutionNote;
+    private LocalDateTime resolvedAt;
 }

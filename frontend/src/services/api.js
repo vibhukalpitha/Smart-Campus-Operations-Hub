@@ -134,6 +134,7 @@ export const ticketService = {
     deleteTicket: (id) => api.delete(`/tickets/${id}`),
     updateStatus: (id, status) => api.patch(`/tickets/${id}/status?status=${status}`),
     assignTechnician: (id, technicianId) => api.patch(`/tickets/${id}/assign?technicianId=${technicianId}`),
+    resolveTicket: (id, resolutionNote) => api.patch(`/tickets/${id}/resolve`, { resolutionNote }),
     addComment: (ticketId, data) => api.post(`/tickets/${ticketId}/comments`, data),
     getComments: (ticketId) => api.get(`/tickets/${ticketId}/comments`),
     updateComment: (commentId, data) => api.put(`/tickets/comments/${commentId}`, data),
