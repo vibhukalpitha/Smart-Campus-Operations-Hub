@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, X, ImageIcon, Loader2 } from 'lucide-react';
 
-const ImageUpload = ({ onUpload, existingImages = [], maxImages = 3 }) => {
+const ImageUpload = ({ onUpload, existingImages = [], maxImages = 3, onImageClick }) => {
     const [uploading, setUploading] = useState(false);
 
     const handleFileChange = async (e) => {
@@ -34,11 +34,15 @@ const ImageUpload = ({ onUpload, existingImages = [], maxImages = 3 }) => {
             {/* Image Preview Grid */}
             <div className="grid grid-cols-3 gap-4">
                 {existingImages.map((img, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
+                    <div 
+                        key={idx} 
+                        className={`relative aspect-square rounded-2xl overflow-hidden border border-white/10 group ${onImageClick ? 'cursor-pointer' : ''}`}
+                        onClick={() => onImageClick && onImageClick(img.imageUrl || img)}
+                    >
                         <img 
-                            src={img.filePath ? `/${img.filePath.replace(/\\/g, '/')}` : img} 
+                            src={img.imageUrl || img} 
                             alt="Attachment" 
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <ImageIcon className="text-white w-6 h-6" />

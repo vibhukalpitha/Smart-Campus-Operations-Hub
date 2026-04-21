@@ -26,9 +26,10 @@ public class TicketImage {
     @Column(name = "ticket_id", nullable = false)
     private Long ticketId;
 
-    @Column(name = "file_path", nullable = false)
-    private String filePath;
+    @Column(name = "image_url", nullable = false)
+    private String imageUrl;
 
+    @Builder.Default
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private LocalDateTime uploadedAt = LocalDateTime.now();
 

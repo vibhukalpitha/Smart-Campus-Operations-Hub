@@ -18,6 +18,11 @@ public interface TicketImageService {
     TicketImage uploadImage(Long ticketId, MultipartFile file);
     
     /**
+     * Store an image URL for a specific ticket (e.g. from Cloudinary).
+     */
+    TicketImage addImageUrl(Long ticketId, String imageUrl);
+    
+    /**
      * Get all images for a specific ticket.
      * @param ticketId The ID of the ticket
      * @return List of TicketImage entities

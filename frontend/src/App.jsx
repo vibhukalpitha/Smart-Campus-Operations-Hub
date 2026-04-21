@@ -21,6 +21,7 @@ import HomeRedirect from './components/HomeRedirect';
 import CreateTicketPage from './pages/ticketing/CreateTicketPage';
 import TicketListPage from './pages/ticketing/TicketListPage';
 import TicketDetailsPage from './pages/ticketing/TicketDetailsPage';
+import EditTicketPage from './pages/ticketing/EditTicketPage';
 
 function App() {
   return (
@@ -58,7 +59,7 @@ function App() {
           <Route
             path="/tickets/create"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['USER']}>
                 <CreateTicketPage />
               </ProtectedRoute>
             }
@@ -68,6 +69,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TicketDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditTicketPage />
               </ProtectedRoute>
             }
           />

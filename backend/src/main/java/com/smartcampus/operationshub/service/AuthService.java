@@ -48,7 +48,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER) // default to USER. Can be changed by DB/admin
-                .emailVerified(false)
+                .emailVerified(true)
                 .verificationToken(vToken)
                 .dateOfBirth(request.getDateOfBirth())
                 .gender(request.getGender())
@@ -97,6 +97,7 @@ public class AuthService {
         var jwtToken = jwtUtil.generateToken(user);
 
         return AuthResponse.builder()
+                .id(user.getId())
                 .token(jwtToken)
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
@@ -151,6 +152,7 @@ public class AuthService {
 
         var jwtToken = jwtUtil.generateToken(user);
         return AuthResponse.builder()
+                .id(user.getId())
                 .token(jwtToken)
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
@@ -232,6 +234,7 @@ public class AuthService {
         
         String jwtToken = jwtUtil.generateToken(user);
         return AuthResponse.builder()
+                .id(user.getId())
                 .token(jwtToken)
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
@@ -323,6 +326,7 @@ public class AuthService {
         
         String jwtToken = jwtUtil.generateToken(user);
         return AuthResponse.builder()
+                .id(user.getId())
                 .token(jwtToken)
                 .email(user.getEmail())
                 .firstName(user.getFirstName())

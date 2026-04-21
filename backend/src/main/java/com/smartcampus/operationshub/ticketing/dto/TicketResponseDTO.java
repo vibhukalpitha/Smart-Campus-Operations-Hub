@@ -24,7 +24,12 @@ public class TicketResponseDTO {
     private TicketStatus status;
     private Long createdBy;
     private Long assignedTo;
+    private Long resourceId;
+    private String location;
     private String contactDetails;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String resolutionNote;
+    private LocalDateTime resolvedAt;
+    private String rejectionNote;
 }

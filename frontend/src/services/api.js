@@ -127,10 +127,17 @@ export const bookingService = {
 export const ticketService = {
     createTicket: (data) => api.post('/tickets', data),
     getAllTickets: () => api.get('/tickets'),
+    getPublicTickets: () => api.get('/tickets/public'),
     getMyTickets: () => api.get('/tickets/my'),
+    getAssignedTickets: () => api.get('/tickets/assigned'),
     getTicketById: (id) => api.get(`/tickets/${id}`),
+    updateTicket: (id, data) => api.put(`/tickets/${id}`, data),
+    deleteTicket: (id) => api.delete(`/tickets/${id}`),
     updateStatus: (id, status) => api.patch(`/tickets/${id}/status?status=${status}`),
     assignTechnician: (id, technicianId) => api.patch(`/tickets/${id}/assign?technicianId=${technicianId}`),
+    resolveTicket: (id, resolutionNote) => api.patch(`/tickets/${id}/resolve`, { resolutionNote }),
+    closeTicket: (id) => api.patch(`/tickets/${id}/close`),
+    rejectTicket: (id, reason) => api.patch(`/tickets/${id}/reject`, { reason }),
     addComment: (ticketId, data) => api.post(`/tickets/${ticketId}/comments`, data),
     getComments: (ticketId) => api.get(`/tickets/${ticketId}/comments`),
     updateComment: (commentId, data) => api.put(`/tickets/comments/${commentId}`, data),
@@ -142,6 +149,9 @@ export const ticketService = {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
     },
+    addImageUrl: (ticketId, imageUrl) => api.post(`/tickets/${ticketId}/images/url`, imageUrl, {
+        headers: { 'Content-Type': 'text/plain' }
+    }),
     getImages: (ticketId) => api.get(`/tickets/${ticketId}/images`)
 };
 

@@ -21,4 +21,9 @@ public interface TicketImageRepository extends JpaRepository<TicketImage, Long> 
      * Count how many images are uploaded for a specific ticket.
      */
     long countByTicketId(Long ticketId);
+
+    /**
+     * Delete all images associated with a specific ticket.
+     */
+    void deleteAllByTicketId(Long ticketId);
 }

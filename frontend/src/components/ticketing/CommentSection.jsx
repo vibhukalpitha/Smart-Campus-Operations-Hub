@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
-import { Send, User, Clock, Trash2 } from 'lucide-react';
+import { Send, User, Clock, Trash2, Edit2 } from 'lucide-react';
 
-const CommentSection = ({ ticketId, comments, onAddComment, onDeleteComment }) => {
+const CommentSection = ({ ticketId, comments, onAddComment, onDeleteComment, onEditComment, currentUser }) => {
     const [newComment, setNewComment] = useState('');
+    const [editingId, setEditingId] = useState(null);
+    const [editContent, setEditContent] = useState('');
+
+    const startEdit = (comment) => {
+        setEditingId(comment.id);
+        setEditContent(comment.content);
+    };
+
+    const handleEditSubmit = (commentId) => {
+        if (editContent.trim() && onEditComment) {
+            onEditComment(commentId, editContent);
+        }
+        setEditingId(null);
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -38,16 +52,41 @@ const CommentSection = ({ ticketId, comments, onAddComment, onDeleteComment }) =
                                         {new Date(comment.createdAt).toLocaleString()}
                                     </span>
                                 </div>
-                                {onDeleteComment && (
-                                    <button 
-                                        onClick={() => onDeleteComment(comment.id)}
-                                        className="text-white/20 hover:text-rose-400 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                )}
+                                <div className="flex items-center space-x-2">
+                                    {(currentUser && (String(currentUser.id) === String(comment.userId) || currentUser.role === 'ADMIN')) && onEditComment && (
+                                        <button 
+                                            onClick={() => startEdit(comment)}
+                                            className="text-white/20 hover:text-indigo-400 transition-colors"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                    {(currentUser && (String(currentUser.id) === String(comment.userId) || currentUser.role === 'ADMIN')) && onDeleteComment && (
+                                        <button 
+                                            onClick={() => onDeleteComment(comment.id)}
+                                            className="text-white/20 hover:text-rose-400 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                            <p className="text-sm text-white/80 leading-relaxed">{comment.content}</p>
+                            {editingId === comment.id ? (
+                                <div className="mt-2 space-y-2">
+                                    <textarea
+                                        value={editContent}
+                                        onChange={(e) => setEditContent(e.target.value)}
+                                        className="w-full bg-[#0a0f1c] border border-white/10 rounded-xl p-3 text-sm text-white resize-none"
+                                        rows="2"
+                                    />
+                                    <div className="flex space-x-2 justify-end">
+                                        <button onClick={() => setEditingId(null)} className="text-xs px-3 py-1 font-bold text-white/50 hover:text-white transition-colors">Cancel</button>
+                                        <button onClick={() => handleEditSubmit(comment.id)} className="text-xs bg-indigo-600 px-3 py-1 rounded text-white font-bold hover:bg-indigo-500 transition-colors">Save</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+                            )}
                         </div>
                     ))
                 )}

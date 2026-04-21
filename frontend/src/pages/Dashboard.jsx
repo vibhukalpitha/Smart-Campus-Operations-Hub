@@ -202,7 +202,7 @@ const Dashboard = () => {
 
                                 {/* Support / Ticketing */}
                                 <div 
-                                    onClick={() => navigate('/tickets/create')}
+                                    onClick={() => navigate('/tickets')}
                                     className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group cursor-pointer relative overflow-hidden"
                                 >
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-bl-full group-hover:bg-indigo-500/20 transition-all duration-500"></div>
@@ -210,9 +210,11 @@ const Dashboard = () => {
                                         <Shield className="text-indigo-400 w-8 h-8" />
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-2">Service Hub</h3>
-                                    <p className="text-white/40 text-sm leading-relaxed mb-6">Log maintenance requests and report campus issues directly to our team.</p>
+                                    <p className="text-white/40 text-sm leading-relaxed mb-6">
+                                        {user?.role === 'USER' ? 'Log maintenance requests and report campus issues directly to our team.' : 'Manage, track, and update all campus maintenance requests and issues.'}
+                                    </p>
                                     <div className="flex items-center text-indigo-400 font-bold text-sm">
-                                        Open Ticket <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                        {user?.role === 'USER' ? 'Open Ticket' : 'Manage Tickets'} <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                                     </div>
                                 </div>
                             </div>
