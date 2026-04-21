@@ -12,6 +12,7 @@ const BookingFormPage = () => {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const [suggestions, setSuggestions] = useState([]);
     
     // Form state - Separate date and time for better UX
     const [bookingDate, setBookingDate] = useState('');
@@ -27,6 +28,7 @@ const BookingFormPage = () => {
     
     // Student (USER) specific state
     const [lecturerSessions, setLecturerSessions] = useState([]);
+    const [occupiedSlots, setOccupiedSlots] = useState([]);
     const [selectedSessionId, setSelectedSessionId] = useState('');
 
     useEffect(() => {
@@ -49,6 +51,12 @@ const BookingFormPage = () => {
                 if (parsedUser?.role === 'USER') {
                     const sessionRes = await bookingService.getLecturerSessions(id);
                     setLecturerSessions(sessionRes.data || []);
+                }
+
+                if (parsedUser?.role === 'LECTURER' || parsedUser?.role === 'ADMIN') {
+                    const occRes = await bookingService.getOccupiedSlots();
+                    const filtered = (occRes.data || []).filter(s => s.resourceId.toString() === id.toString());
+                    setOccupiedSlots(filtered);
                 }
             } catch (error) {
                 console.error("Failed to fetch resource", error);
@@ -99,7 +107,11 @@ const BookingFormPage = () => {
             navigate('/my-bookings');
         } catch (err) {
             console.error("Booking failed", err);
-            setError(err.response?.data?.error || "Booking failed. There might be a scheduling conflict.");
+            const errorData = err.response?.data;
+            setError(errorData?.error || "Booking failed. There might be a scheduling conflict.");
+            if (errorData?.suggestions) {
+                setSuggestions(errorData.suggestions);
+            }
         } finally {
             setSubmitting(false);
         }
@@ -150,12 +162,21 @@ const BookingFormPage = () => {
                                     <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Max Capacity</p>
                                     <p className="text-white/80">{resource.capacity} persons</p>
                                 </div>
-                                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
-                                    <p className="text-xs text-blue-300 font-bold uppercase mb-2">Notice</p>
-                                    <p className="text-xs text-blue-200/70 leading-relaxed">
-                                        Your request will be sent to the administrator for review. You can track the status in your "My Bookings" page.
-                                    </p>
-                                </div>
+                                 {user?.role === 'USER' ? (
+                                     <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                                         <p className="text-xs text-emerald-400 font-bold uppercase mb-2">Student Booking</p>
+                                         <p className="text-xs text-emerald-200/70 leading-relaxed">
+                                             You are booking a seat within a scheduled lecture. Please select an available session and specify how many seats you need.
+                                         </p>
+                                     </div>
+                                 ) : (
+                                     <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+                                         <p className="text-xs text-blue-400 font-bold uppercase mb-2">Staff Booking</p>
+                                         <p className="text-xs text-blue-200/70 leading-relaxed">
+                                             You are booking the entire resource for a specific time slot. Once approved, students will be able to book individual seats.
+                                         </p>
+                                     </div>
+                                 )}
                             </div>
                         </div>
                     </div>
@@ -164,8 +185,39 @@ const BookingFormPage = () => {
                     <div className="lg:col-span-2">
                         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8">
                             {error && (
-                                <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm">
-                                    {error}
+                                <div className="mb-8 space-y-4">
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm">
+                                        {error}
+                                    </div>
+                                    
+                                    {suggestions.length > 0 && (
+                                        <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
+                                            <p className="text-sm font-bold text-blue-300 mb-4 flex items-center">
+                                                <Clock className="w-4 h-4 mr-2" /> Suggested Available Slots for this Resource:
+                                            </p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                {suggestions.map((slot, index) => (
+                                                    <button
+                                                        key={index}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const [start, end] = slot.split(' - ');
+                                                            setStartTimeStr(start);
+                                                            setEndTimeStr(end);
+                                                            setError(null);
+                                                            setSuggestions([]);
+                                                        }}
+                                                        className="px-4 py-3 bg-white/5 border border-white/10 hover:bg-blue-500/20 hover:border-blue-500/50 rounded-xl text-white text-xs font-bold transition-all text-center"
+                                                    >
+                                                        {slot}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] text-blue-300/50 mt-4 italic">
+                                                * Click a slot to automatically update your booking times.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -200,7 +252,30 @@ const BookingFormPage = () => {
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="space-y-6">
+                                        {occupiedSlots.length > 0 && (
+                                            <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                                                <p className="text-sm font-bold text-red-300 mb-4 flex items-center">
+                                                    <Clock className="w-4 h-4 mr-2" /> Current Bookings (Resource Occupied)
+                                                </p>
+                                                <div className="space-y-3">
+                                                    {occupiedSlots.map((slot, index) => (
+                                                        <div key={index} className="flex justify-between items-center text-xs p-2 bg-white/5 rounded-lg border border-white/5">
+                                                            <span className="text-white/60">{slot.dayOfWeek}</span>
+                                                            <span className="text-red-300 font-mono">
+                                                                {new Date(slot.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(slot.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                            </span>
+                                                            <span className="text-white/40">{slot.userEmail}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <p className="text-[10px] text-white/30 mt-4 italic">
+                                                    * Please avoid these time slots to prevent scheduling conflicts.
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         {/* Date */}
                                         <div className="space-y-2">
                                             <label className="text-sm font-semibold text-white/70 flex items-center">
@@ -242,12 +317,13 @@ const BookingFormPage = () => {
                                                 value={endTimeStr}
                                                 onChange={(e) => setEndTimeStr(e.target.value)}
                                             />
-                                        </div>
-                                    </div>
-                                )}
+                                         </div>
+                                     </div>
+                                 </div>
+                             )}
 
-                                {/* Attendees */}
-                                {user?.role !== 'LECTURER' && (
+                                {/* Attendees - ONLY FOR STUDENTS (USER) */}
+                                {user?.role === 'USER' && (
                                     <div className="space-y-2 pt-2">
                                         <label className="text-sm font-semibold text-white/70 flex items-center justify-between">
                                             <div className="flex items-center">
