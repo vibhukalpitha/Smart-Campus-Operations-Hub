@@ -33,4 +33,12 @@ public interface TicketActionService {
      * @return Updated ticket as DTO
      */
     TicketResponseDTO resolveTicket(Long id, Long technicianId, String resolutionNote);
+
+    /**
+     * Close a resolved ticket.
+     * @param id Ticket ID
+     * @param requesterId ID of the ticket owner requesting the closure
+     * @return Updated ticket as DTO
+     */
+    TicketResponseDTO closeTicket(Long id, Long requesterId);
 }

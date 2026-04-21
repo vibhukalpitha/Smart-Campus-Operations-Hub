@@ -177,6 +177,23 @@ const TicketDetailsPage = () => {
         }
     };
 
+    const handleCloseTicket = async () => {
+        if (!isOwner || ticket.status !== 'RESOLVED') return;
+        if (!window.confirm("Are you sure you want to officially close this ticket?")) return;
+
+        setUpdating(true);
+        try {
+            await ticketService.closeTicket(id);
+            alert("Ticket successfully closed.");
+            await fetchTicketDetails();
+        } catch (err) {
+            console.error("Failed to close ticket:", err);
+            alert(err.response?.data?.message || "Failed to close ticket.");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
     const handleResolveSubmit = async () => {
         if (!resolutionNoteText.trim()) {
             alert("Resolution note is required.");
@@ -402,6 +419,15 @@ const TicketDetailsPage = () => {
                                                 {/* Owner Actions */}
                                                 {isOwner && (
                                                     <>
+                                                        {ticket.status === 'RESOLVED' && (
+                                                            <button 
+                                                                disabled={updating}
+                                                                onClick={handleCloseTicket}
+                                                                className="bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center"
+                                                            >
+                                                                {updating ? 'Closing...' : 'Close Ticket'}
+                                                            </button>
+                                                        )}
                                                         <button 
                                                             onClick={() => navigate(`/tickets/${id}/edit`)}
                                                             className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center"

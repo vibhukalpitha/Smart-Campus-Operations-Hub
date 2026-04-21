@@ -83,6 +83,25 @@ public class TicketActionServiceImpl implements TicketActionService {
         return mapToResponse(ticketRepository.save(ticket));
     }
 
+    @Override
+    @Transactional
+    public TicketResponseDTO closeTicket(Long id, Long requesterId) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+
+        if (!ticket.getCreatedBy().equals(requesterId)) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not the owner of this ticket.");
+        }
+
+        if (ticket.getStatus() != TicketStatus.RESOLVED) {
+            throw new IllegalStateException("Ticket must be RESOLVED before it can be closed.");
+        }
+
+        ticket.setStatus(TicketStatus.CLOSED);
+
+        return mapToResponse(ticketRepository.save(ticket));
+    }
+
     /**
      * Helper method to map Ticket entity to TicketResponseDTO.
      * (Re-implemented as I cannot modify TicketServiceImpl to make it public/extract to a mapper)

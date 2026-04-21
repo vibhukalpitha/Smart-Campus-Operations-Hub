@@ -53,4 +53,15 @@ public class TicketActionController {
         String note = payload.get("resolutionNote");
         return ResponseEntity.ok(ticketActionService.resolveTicket(id, user.getId(), note));
     }
+
+    /**
+     * PATCH /api/tickets/{id}/close: Close a resolved ticket.
+     */
+    @PatchMapping("/{id}/close")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<TicketResponseDTO> closeTicket(
+            @PathVariable Long id,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.smartcampus.operationshub.entity.User user) {
+        return ResponseEntity.ok(ticketActionService.closeTicket(id, user.getId()));
+    }
 }
