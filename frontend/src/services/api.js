@@ -119,6 +119,7 @@ export const bookingService = {
     getEvents: () => api.get('/bookings/events'),
     getLecturerSessions: (resourceId) => api.get(`/bookings/resource/${resourceId}/sessions`),
     getAllLecturerSessions: () => api.get('/bookings/sessions/active'),
+    getOccupiedSlots: (date) => api.get('/bookings/occupied', { params: { date } }),
     create: (data) => api.post('/bookings', data),
     updateStatus: (id, status, reason) => api.put(`/bookings/${id}/status`, { status, reason }),
     cancel: (id) => api.delete(`/bookings/${id}`)

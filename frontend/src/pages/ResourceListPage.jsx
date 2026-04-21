@@ -13,6 +13,7 @@ const ResourceListPage = () => {
     const isTypeLocked = Boolean(lockedType);
 
     const [resources, setResources] = useState([]);
+    const [occupiedSlots, setOccupiedSlots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -120,6 +121,16 @@ const ResourceListPage = () => {
                 const enhancedContent = pageContent.map(r => ({ ...r, _uniqueId: r.id.toString() }));
 
                 setResources(enhancedContent);
+
+                if (userRole === 'LECTURER' || userRole === 'ADMIN') {
+                    try {
+                        const today = new Date().toISOString().split('T')[0];
+                        const occResponse = await bookingService.getOccupiedSlots(today);
+                        setOccupiedSlots(occResponse.data || []);
+                    } catch (occErr) {
+                        console.error("Failed to fetch occupied slots", occErr);
+                    }
+                }
 
                 if (Array.isArray(payload)) {
                     setTotalPages(1);
@@ -402,8 +413,8 @@ const ResourceListPage = () => {
                                                     </span>
                                                 </div>
 
-                                                {/* FULL Overlay */}
-                                                {full && (
+                                                {/* FULL Overlay - Only for regular USERS */}
+                                                {(full && userRole === 'USER') && (
                                                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                                                         <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-4 py-2 rounded-full">
                                                             <XCircle className="w-4 h-4 text-red-400" />
@@ -426,56 +437,81 @@ const ResourceListPage = () => {
                                                         <Users className="w-4 h-4 mr-2 text-purple-400/60 flex-shrink-0" />
                                                         Total Capacity: {res.capacity} persons
                                                     </div>
-                                                    <div className="flex items-center text-sm text-white/60">
-                                                        <Clock3 className="w-4 h-4 mr-2 text-emerald-400/60 flex-shrink-0" />
-                                                        Availability: {getAvailabilityText(res)}
-                                                    </div>
+                                                    {userRole !== 'LECTURER' && (
+                                                        <div className="flex items-center text-sm text-white/60">
+                                                            <Clock3 className="w-4 h-4 mr-2 text-emerald-400/60 flex-shrink-0" />
+                                                            Availability: {getAvailabilityText(res)}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Seat Availability Section */}
-                                                <div className="mb-5 p-3 rounded-xl bg-white/5 border border-white/10">
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">Seat Availability</span>
-                                                        {full ? (
-                                                            <span className="text-xs font-bold text-red-400 flex items-center gap-1">
-                                                                <XCircle className="w-3 h-3" /> Full
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                                                                <CheckCircle className="w-3 h-3" />
-                                                                {res.availableSeats != null ? res.availableSeats : res.capacity} left
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                {userRole !== 'LECTURER' && (
+                                                    <div className="mb-5 p-3 rounded-xl bg-white/5 border border-white/10">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">Seat Availability</span>
+                                                            {full ? (
+                                                                <span className="text-xs font-bold text-red-400 flex items-center gap-1">
+                                                                    <XCircle className="w-3 h-3" /> Full
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                                                                    <CheckCircle className="w-3 h-3" />
+                                                                    {res.availableSeats != null ? res.availableSeats : res.capacity} left
+                                                                </span>
+                                                            )}
+                                                        </div>
 
-                                                    {/* Progress Bar */}
-                                                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${getCapacityColor(res.availableSeats, res.capacity)}`}
-                                                            style={{ width: getCapacityBarWidth(res.availableSeats, res.capacity) }}
-                                                        />
-                                                    </div>
+                                                        {/* Progress Bar */}
+                                                        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${getCapacityColor(res.availableSeats, res.capacity)}`}
+                                                                style={{ width: getCapacityBarWidth(res.availableSeats, res.capacity) }}
+                                                            />
+                                                        </div>
 
-                                                    <div className="flex justify-between mt-1">
-                                                        <span className="text-[10px] text-white/30">
-                                                            {res.bookedCount != null ? res.bookedCount : 0} booked
-                                                        </span>
-                                                        <span className="text-[10px] text-white/30">
-                                                            of {res.capacity}
-                                                        </span>
+                                                        <div className="flex justify-between mt-1">
+                                                            <span className="text-[10px] text-white/30">
+                                                                {res.bookedCount != null ? res.bookedCount : 0} booked
+                                                            </span>
+                                                            <span className="text-[10px] text-white/30">
+                                                                of {res.capacity}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
+
+                                                {/* Occupied Slots for Lecturers/Admins */}
+                                                {(userRole === 'LECTURER' || userRole === 'ADMIN') && occupiedSlots.filter(s => s.resourceId === res.id).length > 0 && (
+                                                    <div className="mb-5 p-4 bg-red-500/5 border border-red-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-500">
+                                                        <h4 className="text-[10px] font-bold text-red-300 uppercase tracking-widest mb-3 flex items-center">
+                                                            <Clock3 className="w-3 h-3 mr-1.5" /> Booked Intervals Today
+                                                        </h4>
+                                                        <div className="space-y-2">
+                                                            {occupiedSlots.filter(s => s.resourceId === res.id).map((slot, idx) => (
+                                                                <div key={idx} className="flex items-center justify-between">
+                                                                    <p className="text-xs text-white/80 font-medium">
+                                                                        {slot.dayOfWeek.charAt(0) + slot.dayOfWeek.slice(1).toLowerCase()}
+                                                                    </p>
+                                                                    <p className="text-xs text-red-300/80 font-mono">
+                                                                        {new Date(slot.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(slot.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 <button
                                                     onClick={() => navigate(`/book/${res.id}`)}
-                                                    disabled={isDisabled}
+                                                    disabled={res.status !== 'ACTIVE' || (userRole === 'USER' && full)}
                                                     className={`w-full py-3 text-white text-sm font-bold rounded-xl transition-all shadow-lg ${
-                                                        isDisabled
+                                                        (res.status !== 'ACTIVE' || (userRole === 'USER' && full))
                                                             ? 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'
                                                             : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 group-hover:shadow-blue-500/40'
                                                     }`}
                                                 >
-                                                    {full ? 'No Seats Available' : res.status !== 'ACTIVE' ? 'Unavailable' : 'Book This Resource'}
+                                                    {full && userRole === 'USER' ? 'No Seats Available' : res.status !== 'ACTIVE' ? 'Unavailable' : 'Book This Resource'}
                                                 </button>
                                             </div>
                                         </div>
