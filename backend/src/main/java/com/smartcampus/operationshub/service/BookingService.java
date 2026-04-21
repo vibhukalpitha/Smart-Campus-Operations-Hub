@@ -6,6 +6,7 @@ import com.smartcampus.operationshub.entity.Booking;
 import com.smartcampus.operationshub.entity.BookingStatus;
 import com.smartcampus.operationshub.entity.Resource;
 import com.smartcampus.operationshub.entity.User;
+import com.smartcampus.operationshub.entity.Role;
 import com.smartcampus.operationshub.repository.BookingRepository;
 import com.smartcampus.operationshub.repository.ResourceRepository;
 import lombok.RequiredArgsConstructor;
@@ -284,6 +285,7 @@ public class BookingService {
         return bookingRepository.findAll().stream()
                 .filter(b -> b.getStatus() == BookingStatus.APPROVED || b.getStatus() == BookingStatus.PENDING)
                 .filter(b -> (b.getStartTime().isBefore(end) && b.getEndTime().isAfter(start)))
+                .filter(b -> b.getUser().getRole() != Role.USER)
                 .map(b -> {
                     java.util.Map<String, Object> map = new java.util.HashMap<>();
                     map.put("resourceId", b.getResource().getId());
