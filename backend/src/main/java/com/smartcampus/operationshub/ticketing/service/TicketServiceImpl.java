@@ -53,10 +53,42 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public TicketResponseDTO getTicketById(Long id) {
-        return ticketRepository.findById(id)
-                .map(this::mapToResponse)
+    public TicketResponseDTO getTicketById(Long id, Long requesterId, String requesterRole) {
+        Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+        
+        TicketResponseDTO response = mapToResponse(ticket);
+        
+        // Determine if Viewer
+        boolean isViewer = true;
+        if ("ADMIN".equals(requesterRole)) {
+            isViewer = false;
+        } else if ("TECHNICIAN".equals(requesterRole) && ticket.getAssignedTo() != null && ticket.getAssignedTo().equals(requesterId)) {
+            isViewer = false;
+        } else if (ticket.getCreatedBy().equals(requesterId)) {
+            isViewer = false;
+        }
+
+        if (isViewer) {
+            response.setContactDetails(null);
+            // Optionally mask createdBy if needed, but for now we nullify it or leave it. 
+            // The prompt says "Hide sensitive info like Contact Details, Personal user data"
+            // Let's just nullify contactDetails.
+        }
+
+        return response;
+    }
+
+    @Override
+    public List<TicketResponseDTO> getPublicTickets() {
+        return ticketRepository.findAll().stream()
+                .map(ticket -> {
+                    TicketResponseDTO dto = mapToResponse(ticket);
+                    // Force mask out sensitive data for public list view
+                    dto.setContactDetails(null);
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override

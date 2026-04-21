@@ -42,16 +42,27 @@ public class TicketController {
      * GET: Retrieve all tickets.
      */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
     public ResponseEntity<List<TicketResponseDTO>> getAllTickets() {
         return ResponseEntity.ok(ticketService.getAllTickets());
+    }
+
+    /**
+     * GET: Retrieve public view of all tickets.
+     */
+    @GetMapping("/public")
+    public ResponseEntity<List<TicketResponseDTO>> getPublicTickets() {
+        return ResponseEntity.ok(ticketService.getPublicTickets());
     }
 
     /**
      * GET: Retrieve a ticket by its ID.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<TicketResponseDTO> getTicketById(@PathVariable Long id) {
-        return ResponseEntity.ok(ticketService.getTicketById(id));
+    public ResponseEntity<TicketResponseDTO> getTicketById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(ticketService.getTicketById(id, user.getId(), user.getRole().name()));
     }
 
     /**

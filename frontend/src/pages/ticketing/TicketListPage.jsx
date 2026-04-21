@@ -22,6 +22,7 @@ const TicketListPage = () => {
     const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [viewMode, setViewMode] = useState('DEFAULT');
 
     const [user, setUser] = useState(null);
 
@@ -31,14 +32,16 @@ const TicketListPage = () => {
             setUser(JSON.parse(storedUser));
         }
         fetchTickets();
-    }, []);
+    }, [viewMode]);
 
     const fetchTickets = async () => {
         setLoading(true);
         try {
             const storedUser = JSON.parse(localStorage.getItem('user'));
             let response;
-            if (storedUser?.role === 'ADMIN') {
+            if (viewMode === 'PUBLIC') {
+                response = await ticketService.getPublicTickets();
+            } else if (storedUser?.role === 'ADMIN') {
                 response = await ticketService.getAllTickets();
             } else if (storedUser?.role === 'TECHNICIAN') {
                 response = await ticketService.getAssignedTickets();
@@ -98,15 +101,36 @@ const TicketListPage = () => {
                             <p className="text-indigo-300/60 font-medium text-lg">Manage and track your campus maintenance requests</p>
                         </div>
 
-                        {user?.role === 'USER' && (
-                            <Link 
-                                to="/tickets/create"
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-4 rounded-2xl font-bold flex items-center justify-center space-x-3 shadow-xl shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                            >
-                                <Plus className="w-5 h-5" />
-                                <span className="uppercase tracking-widest text-sm">Create New Ticket</span>
-                            </Link>
-                        )}
+                        <div className="flex flex-col space-y-4 md:items-end">
+                            <div className="flex p-1 bg-white/5 border border-white/10 rounded-xl">
+                                <button 
+                                    onClick={() => setViewMode('DEFAULT')}
+                                    className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+                                        viewMode === 'DEFAULT' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-indigo-300/50 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    My Workspace
+                                </button>
+                                <button 
+                                    onClick={() => setViewMode('PUBLIC')}
+                                    className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+                                        viewMode === 'PUBLIC' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-indigo-300/50 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    Campus Tickets
+                                </button>
+                            </div>
+
+                            {user?.role === 'USER' && (
+                                <Link 
+                                    to="/tickets/create"
+                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-8 py-4 rounded-xl font-bold flex items-center justify-center space-x-3 shadow-xl shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                    <span className="uppercase tracking-widest text-sm">Create New Ticket</span>
+                                </Link>
+                            )}
+                        </div>
                     </div>
 
                     {/* Search and Filters */}

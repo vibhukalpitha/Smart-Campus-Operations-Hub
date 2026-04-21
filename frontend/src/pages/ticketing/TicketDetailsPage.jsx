@@ -78,24 +78,11 @@ const TicketDetailsPage = () => {
             const response = await ticketService.getTicketById(id);
             const fetchedTicket = response.data.data;
             
-            // Client-side authorization check to prevent data exposure
-            let isAuthorized = true;
-            if (user && user.role === 'USER' && String(fetchedTicket.createdBy) !== String(user.id)) {
-                isAuthorized = false;
-            } else if (user && user.role === 'TECHNICIAN' && String(fetchedTicket.assignedTo) !== String(user.id)) {
-                isAuthorized = false;
-            }
-            
-            if (!isAuthorized) {
-                setTicket(null);
-                setError("You do not have permission to view this ticket.");
-            } else {
-                setTicket(fetchedTicket);
-                setError(null);
-            }
+            setTicket(fetchedTicket);
+            setError(null);
         } catch (err) {
             console.error("Failed to fetch ticket details:", err);
-            setError("Could not retrieve ticket information. It may have been deleted or you may not have permission to view it.");
+            setError("Could not retrieve ticket information. It may have been deleted.");
         } finally {
             setLoading(false);
         }
@@ -125,6 +112,27 @@ const TicketDetailsPage = () => {
             fetchComments(); // Refresh comments
         } catch (err) {
             console.error("Failed to add comment:", err);
+        }
+    };
+
+    const handleCommentEdit = async (commentId, newContent) => {
+        try {
+            await ticketService.updateComment(commentId, { content: newContent });
+            fetchComments(); // Refresh comments
+        } catch (err) {
+            console.error("Failed to edit comment:", err);
+            alert("Failed to edit comment. You may not have permission.");
+        }
+    };
+
+    const handleCommentDelete = async (commentId) => {
+        if (!window.confirm("Are you sure you want to delete this comment?")) return;
+        try {
+            await ticketService.deleteComment(commentId);
+            fetchComments(); // Refresh comments
+        } catch (err) {
+            console.error("Failed to delete comment:", err);
+            alert("Failed to delete comment. You may not have permission.");
         }
     };
 
@@ -209,8 +217,11 @@ const TicketDetailsPage = () => {
         }
     };
 
-    const isAdminOrTechnician = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
-    const isOwner = String(user?.id) === String(ticket?.createdBy);
+    const isAdmin = user?.role === 'ADMIN';
+    const isOwner = ticket && String(user?.id) === String(ticket.createdBy);
+    const isAssignedTech = ticket && user?.role === 'TECHNICIAN' && String(ticket.assignedTo) === String(user?.id);
+    const isViewer = ticket && !isAdmin && !isOwner && !isAssignedTech;
+    const canManage = isAdmin || isAssignedTech;
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -291,8 +302,14 @@ const TicketDetailsPage = () => {
                                                 <ChevronRight className="w-3 h-3" />
                                                 <span className="text-indigo-400">#{ticket.id.toString().padStart(4, '0')}</span>
                                             </div>
-                                            <h1 className="text-3xl font-bold tracking-tight text-white leading-tight">
+                                            <h1 className="text-3xl font-bold tracking-tight text-white leading-tight flex items-center flex-wrap gap-3">
                                                 {ticket.description}
+                                                {isViewer && (
+                                                    <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest flex items-center">
+                                                        <AlertCircle className="w-3 h-3 mr-1" />
+                                                        View Only Mode
+                                                    </span>
+                                                )}
                                             </h1>
                                         </div>
                                         <div className="flex space-x-3">
@@ -328,7 +345,7 @@ const TicketDetailsPage = () => {
                                             <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
                                                 <Phone className="w-3 h-3 mr-1" /> Contact
                                             </p>
-                                            <p className="font-semibold text-white truncate">{ticket.contactDetails || 'None Provided'}</p>
+                                            <p className="font-semibold text-white truncate">{isViewer ? <span className="text-indigo-300/40 italic">Hidden for privacy</span> : (ticket.contactDetails || 'None Provided')}</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
@@ -340,12 +357,12 @@ const TicketDetailsPage = () => {
                                             <p className="text-[10px] font-bold text-indigo-300/40 uppercase tracking-widest flex items-center">
                                                 <User className="w-3 h-3 mr-1" /> Created By
                                             </p>
-                                            <p className="font-semibold text-white">{ticket.createdBy ? `User ID: ${ticket.createdBy}` : 'Anonymous'}</p>
+                                            <p className="font-semibold text-white">{isViewer ? <span className="text-indigo-300/40 italic">Hidden for privacy</span> : (ticket.createdBy ? `User ID: ${ticket.createdBy}` : 'Anonymous')}</p>
                                         </div>
                                     </div>
 
                                     {/* Action Panel */}
-                                    {(isAdminOrTechnician || isOwner) && (
+                                    {!isViewer && (canManage || isOwner) && (
                                         <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-3xl p-6 space-y-4">
                                             <div className="flex items-center space-x-2 text-indigo-300 mb-2">
                                                 <Settings className="w-4 h-4" />
@@ -353,7 +370,7 @@ const TicketDetailsPage = () => {
                                             </div>
                                             <div className="flex flex-wrap gap-3">
                                                 {/* Start Progress Action */}
-                                                {isAdminOrTechnician && (
+                                                {canManage && (
                                                     <button 
                                                         disabled={updating || ticket.status === 'IN_PROGRESS' || ticket.status === 'RESOLVED' || ticket.status === 'CLOSED'}
                                                         onClick={() => handleStatusUpdate('IN_PROGRESS')}
@@ -435,6 +452,9 @@ const TicketDetailsPage = () => {
                                     ticketId={id} 
                                     comments={comments} 
                                     onAddComment={handleCommentSubmit} 
+                                    currentUser={user}
+                                    onEditComment={handleCommentEdit}
+                                    onDeleteComment={handleCommentDelete}
                                 />
                             </div>
                         </div>

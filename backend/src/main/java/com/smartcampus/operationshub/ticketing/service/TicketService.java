@@ -22,9 +22,14 @@ public interface TicketService {
     List<TicketResponseDTO> getAllTickets();
     
     /**
-     * Get a ticket by its ID.
+     * Get a ticket by its ID, dynamically masking sensitive fields for unauthorized viewers.
      */
-    TicketResponseDTO getTicketById(Long id);
+    TicketResponseDTO getTicketById(Long id, Long requesterId, String requesterRole);
+
+    /**
+     * Get all public tickets (masked for read-only view).
+     */
+    List<TicketResponseDTO> getPublicTickets();
     
     /**
      * Update an existing ticket.

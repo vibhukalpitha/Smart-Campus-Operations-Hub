@@ -127,6 +127,7 @@ export const bookingService = {
 export const ticketService = {
     createTicket: (data) => api.post('/tickets', data),
     getAllTickets: () => api.get('/tickets'),
+    getPublicTickets: () => api.get('/tickets/public'),
     getMyTickets: () => api.get('/tickets/my'),
     getAssignedTickets: () => api.get('/tickets/assigned'),
     getTicketById: (id) => api.get(`/tickets/${id}`),
