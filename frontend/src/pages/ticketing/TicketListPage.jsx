@@ -134,26 +134,26 @@ const TicketListPage = () => {
                     </div>
 
                     {/* Search and Filters */}
-                    <div className="space-y-4">
-                        <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-300/40 group-focus-within:text-indigo-400 transition-colors" />
+                    <div className="bg-[#0a0f1c]/60 backdrop-blur-2xl border border-white/5 rounded-3xl p-6 shadow-2xl flex flex-col xl:flex-row xl:items-center justify-between gap-6 relative z-10">
+                        <div className="relative group flex-1 max-w-2xl">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-300/40 group-focus-within:text-indigo-400 transition-colors" />
                             <input 
                                 type="text"
                                 placeholder="Search by description or category..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                                className="w-full bg-[#0d1225] border border-white/5 rounded-2xl pl-14 pr-6 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-inner"
                             />
                         </div>
-                        <div className="flex flex-wrap gap-2 pt-2">
+                        <div className="flex flex-wrap gap-2">
                             {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map(status => (
                                 <button
                                     key={status}
                                     onClick={() => setStatusFilter(status)}
-                                    className={`px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+                                    className={`px-5 py-2.5 rounded-full text-[10px] sm:text-xs font-extrabold uppercase tracking-widest transition-all duration-300 ${
                                         statusFilter === status 
-                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-400' 
-                                            : 'bg-white/5 text-indigo-300/60 hover:bg-white/10 hover:text-white border border-white/10'
+                                            ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] border border-indigo-400/50 scale-105' 
+                                            : 'bg-[#0d1225] text-indigo-300/50 hover:bg-white/5 hover:text-white border border-white/5'
                                     }`}
                                 >
                                     {status.replace('_', ' ')}
@@ -189,22 +189,25 @@ const TicketListPage = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="py-24 flex flex-col items-center justify-center text-center bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-12 animate-in zoom-in duration-500">
-                            <div className="w-24 h-24 rounded-full bg-indigo-500/10 flex items-center justify-center mb-6 border border-indigo-500/20">
-                                <Inbox className="text-indigo-400 w-12 h-12" />
+                        <div className="py-24 flex flex-col items-center justify-center text-center bg-[#0a0f1c]/40 backdrop-blur-2xl border border-white/5 rounded-[3rem] p-12 shadow-2xl relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                            
+                            <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-indigo-500/10 to-blue-500/10 flex items-center justify-center mb-8 border border-white/5 shadow-2xl relative">
+                                <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl animate-pulse"></div>
+                                <Inbox className="text-indigo-400 w-12 h-12 relative z-10 drop-shadow-lg" />
                             </div>
-                            <h2 className="text-2xl font-bold text-white mb-2">No tickets found</h2>
-                            <p className="text-indigo-300/40 max-w-sm mb-8">
+                            <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200 mb-3">No Request Found</h2>
+                            <p className="text-indigo-200/50 max-w-md mb-10 text-lg font-medium leading-relaxed">
                                 {searchQuery || statusFilter !== 'ALL' 
-                                    ? "No tickets match your current filters. Try adjusting them."
-                                    : "You haven't created any support tickets yet. Log an issue to get started."}
+                                    ? "We couldn't find any tickets matching your active filters. Try resetting them or adjusting your search parameters."
+                                    : "You're all caught up! If you're experiencing any issues around campus, log a new ticket to get started."}
                             </p>
                             {!searchQuery && statusFilter === 'ALL' && (
                                 <Link 
                                     to="/tickets/create"
-                                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all"
+                                    className="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl font-bold shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] transition-all hover:-translate-y-1"
                                 >
-                                    Log First Issue
+                                    Submit A Request
                                 </Link>
                             )}
                         </div>
