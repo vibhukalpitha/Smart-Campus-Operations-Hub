@@ -36,7 +36,8 @@ api.interceptors.response.use(
 export const authService = {
     login: (credentials) => api.post('/auth/login', credentials),
     register: (userData) => api.post('/auth/register', userData),
-    githubLogin: (code) => api.post(`/auth/github?code=${code}`)
+    githubLogin: (code) => api.post(`/auth/github?code=${code}`),
+    googleLogin: (code) => api.post(`/auth/google?code=${code}`)
 };
 
 export const notificationService = {
@@ -121,6 +122,37 @@ export const bookingService = {
     create: (data) => api.post('/bookings', data),
     updateStatus: (id, status, reason) => api.put(`/bookings/${id}/status`, { status, reason }),
     cancel: (id) => api.delete(`/bookings/${id}`)
+};
+
+export const ticketService = {
+    createTicket: (data) => api.post('/tickets', data),
+    getAllTickets: () => api.get('/tickets'),
+    getPublicTickets: () => api.get('/tickets/public'),
+    getMyTickets: () => api.get('/tickets/my'),
+    getAssignedTickets: () => api.get('/tickets/assigned'),
+    getTicketById: (id) => api.get(`/tickets/${id}`),
+    updateTicket: (id, data) => api.put(`/tickets/${id}`, data),
+    deleteTicket: (id) => api.delete(`/tickets/${id}`),
+    updateStatus: (id, status) => api.patch(`/tickets/${id}/status?status=${status}`),
+    assignTechnician: (id, technicianId) => api.patch(`/tickets/${id}/assign?technicianId=${technicianId}`),
+    resolveTicket: (id, resolutionNote) => api.patch(`/tickets/${id}/resolve`, { resolutionNote }),
+    closeTicket: (id) => api.patch(`/tickets/${id}/close`),
+    rejectTicket: (id, reason) => api.patch(`/tickets/${id}/reject`, { reason }),
+    addComment: (ticketId, data) => api.post(`/tickets/${ticketId}/comments`, data),
+    getComments: (ticketId) => api.get(`/tickets/${ticketId}/comments`),
+    updateComment: (commentId, data) => api.put(`/tickets/comments/${commentId}`, data),
+    deleteComment: (commentId) => api.delete(`/tickets/comments/${commentId}`),
+    uploadImage: (ticketId, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post(`/tickets/${ticketId}/images`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+    addImageUrl: (ticketId, imageUrl) => api.post(`/tickets/${ticketId}/images/url`, imageUrl, {
+        headers: { 'Content-Type': 'text/plain' }
+    }),
+    getImages: (ticketId) => api.get(`/tickets/${ticketId}/images`)
 };
 
 export default api;
