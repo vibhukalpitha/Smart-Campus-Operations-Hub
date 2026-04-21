@@ -55,4 +55,9 @@ public interface TicketService {
      * Update the status of a ticket.
      */
     TicketResponseDTO updateStatus(Long id, TicketStatus status);
+
+    /**
+     * Assign a technician to a ticket.
+     */
+    TicketResponseDTO assignTechnician(Long id, Long technicianId);
 }

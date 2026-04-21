@@ -1,6 +1,10 @@
 package com.smartcampus.operationshub.ticketing.service;
 
 import com.smartcampus.operationshub.exception.ResourceNotFoundException;
+import com.smartcampus.operationshub.entity.Role;
+import com.smartcampus.operationshub.entity.User;
+import com.smartcampus.operationshub.repository.UserRepository;
+import com.smartcampus.operationshub.service.NotificationService;
 import com.smartcampus.operationshub.ticketing.constant.TicketStatus;
 import com.smartcampus.operationshub.ticketing.dto.TicketRequestDTO;
 import com.smartcampus.operationshub.ticketing.dto.TicketResponseDTO;
@@ -26,6 +30,8 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final CommentRepository commentRepository;
     private final TicketImageRepository ticketImageRepository;
+    private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -42,7 +48,20 @@ public class TicketServiceImpl implements TicketService {
                 .contactDetails(request.getContactDetails())
                 .build();
 
-        return mapToResponse(ticketRepository.save(ticket));
+        Ticket savedTicket = ticketRepository.save(ticket);
+        
+        // Notify Admins
+        List<User> admins = userRepository.findAllByRole(Role.ADMIN);
+        for (User admin : admins) {
+            notificationService.createNotification(
+                "New Ticket Created",
+                "A new " + savedTicket.getCategory() + " ticket has been created: #" + savedTicket.getId(),
+                "ALERT",
+                admin.getEmail()
+            );
+        }
+
+        return mapToResponse(savedTicket);
     }
 
     @Override
@@ -154,8 +173,75 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
         
+        TicketStatus oldStatus = ticket.getStatus();
         ticket.setStatus(status);
-        return mapToResponse(ticketRepository.save(ticket));
+        Ticket savedTicket = ticketRepository.save(ticket);
+
+        // Notify based on status change
+        if (oldStatus != status) {
+            User creator = userRepository.findById(savedTicket.getCreatedBy()).orElse(null);
+            List<User> admins = userRepository.findAllByRole(Role.ADMIN);
+            
+            String statusMsg = "Ticket #" + savedTicket.getId() + " status updated to " + status;
+            
+            // Notify User
+            if (creator != null) {
+                notificationService.createNotification("Ticket Status Update", statusMsg, "INFO", creator.getEmail());
+            }
+            
+            // Notify Admin
+            for (User admin : admins) {
+                notificationService.createNotification("Ticket Status Update", statusMsg, "INFO", admin.getEmail());
+            }
+
+            // Specific notifications for In Progress
+            if (status == TicketStatus.IN_PROGRESS) {
+                if (creator != null) {
+                    notificationService.createNotification("Technician Working", "A technician has started working on your ticket #" + savedTicket.getId(), "INFO", creator.getEmail());
+                }
+            } else if (status == TicketStatus.RESOLVED) {
+                if (creator != null) {
+                    notificationService.createNotification("Ticket Resolved", "Your ticket #" + savedTicket.getId() + " has been marked as resolved.", "INFO", creator.getEmail());
+                }
+            }
+        }
+
+        return mapToResponse(savedTicket);
+    }
+
+    @Override
+    @Transactional
+    public TicketResponseDTO assignTechnician(Long id, Long technicianId) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+        
+        ticket.setAssignedTo(technicianId);
+        Ticket savedTicket = ticketRepository.save(ticket);
+
+        User technician = userRepository.findById(technicianId).orElse(null);
+        User creator = userRepository.findById(savedTicket.getCreatedBy()).orElse(null);
+
+        if (technician != null) {
+            // Notify Technician
+            notificationService.createNotification(
+                "New Ticket Assigned",
+                "You have been assigned a new ticket: #" + savedTicket.getId(),
+                "ALERT",
+                technician.getEmail()
+            );
+
+            // Notify User
+            if (creator != null) {
+                notificationService.createNotification(
+                    "Technician Assigned",
+                    "Technician " + technician.getFirstName() + " " + technician.getLastName() + " has been assigned to your ticket #" + savedTicket.getId(),
+                    "INFO",
+                    creator.getEmail()
+                );
+            }
+        }
+
+        return mapToResponse(savedTicket);
     }
 
     /**

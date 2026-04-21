@@ -72,7 +72,8 @@ public class TicketImageServiceImpl implements TicketImageService {
 
             TicketImage ticketImage = TicketImage.builder()
                     .ticketId(ticketId)
-                    .imageUrl(filePath.toString()) // Storing local path as URL for legacy support
+                    .imageUrl(filePath.toString())
+                    .filePath(filePath.toString())
                     .build();
 
             return ticketImageRepository.save(ticketImage);
@@ -99,6 +100,7 @@ public class TicketImageServiceImpl implements TicketImageService {
         TicketImage ticketImage = TicketImage.builder()
                 .ticketId(ticketId)
                 .imageUrl(imageUrl)
+                .filePath(imageUrl)
                 .build();
 
         return ticketImageRepository.save(ticketImage);
