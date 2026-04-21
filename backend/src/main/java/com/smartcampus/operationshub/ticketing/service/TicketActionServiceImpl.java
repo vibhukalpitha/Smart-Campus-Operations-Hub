@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TicketActionServiceImpl implements TicketActionService {
 
     private final TicketRepository ticketRepository;
+    private final com.smartcampus.operationshub.repository.UserRepository userRepository;
 
     @Override
     @Transactional
@@ -37,9 +38,86 @@ public class TicketActionServiceImpl implements TicketActionService {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
 
+        if (ticket.getStatus() == TicketStatus.CLOSED || ticket.getStatus() == TicketStatus.RESOLVED) {
+            throw new IllegalStateException("Cannot assign a technician to a closed or resolved ticket.");
+        }
+
+        var technician = userRepository.findById(technicianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Technician not found with id: " + technicianId));
+        
+        if (!technician.getRole().name().equals("TECHNICIAN")) {
+            throw new IllegalArgumentException("User is not a TECHNICIAN");
+        }
+
         ticket.setAssignedTo(technicianId);
         // Requirement: assigning a technician sets status to IN_PROGRESS
-        ticket.setStatus(TicketStatus.IN_PROGRESS);
+        if (ticket.getStatus() == TicketStatus.OPEN) {
+            ticket.setStatus(TicketStatus.IN_PROGRESS);
+        }
+
+        return mapToResponse(ticketRepository.save(ticket));
+    }
+
+    @Override
+    @Transactional
+    public TicketResponseDTO resolveTicket(Long id, Long technicianId, String resolutionNote) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+
+        if (ticket.getStatus() == TicketStatus.CLOSED || ticket.getStatus() == TicketStatus.RESOLVED) {
+            throw new IllegalStateException("Ticket is already closed or resolved.");
+        }
+
+        if (ticket.getAssignedTo() == null || !ticket.getAssignedTo().equals(technicianId)) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not assigned to this ticket.");
+        }
+
+        if (resolutionNote == null || resolutionNote.trim().isEmpty()) {
+            throw new IllegalArgumentException("Resolution note is required.");
+        }
+
+        ticket.setResolutionNote(resolutionNote);
+        ticket.setResolvedAt(java.time.LocalDateTime.now());
+        ticket.setStatus(TicketStatus.RESOLVED);
+
+        return mapToResponse(ticketRepository.save(ticket));
+    }
+
+    @Override
+    @Transactional
+    public TicketResponseDTO closeTicket(Long id, Long requesterId) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+
+        if (!ticket.getCreatedBy().equals(requesterId)) {
+            throw new org.springframework.security.access.AccessDeniedException("You are not the owner of this ticket.");
+        }
+
+        if (ticket.getStatus() != TicketStatus.RESOLVED) {
+            throw new IllegalStateException("Ticket must be RESOLVED before it can be closed.");
+        }
+
+        ticket.setStatus(TicketStatus.CLOSED);
+
+        return mapToResponse(ticketRepository.save(ticket));
+    }
+
+    @Override
+    @Transactional
+    public TicketResponseDTO rejectTicket(Long id, String reason) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+
+        if (ticket.getStatus() == TicketStatus.RESOLVED || ticket.getStatus() == TicketStatus.CLOSED) {
+            throw new IllegalStateException("Ticket cannot be rejected as it is already resolved or closed.");
+        }
+
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new IllegalArgumentException("Rejection reason is required.");
+        }
+
+        ticket.setStatus(TicketStatus.REJECTED);
+        ticket.setRejectionNote(reason);
 
         return mapToResponse(ticketRepository.save(ticket));
     }
@@ -60,6 +138,9 @@ public class TicketActionServiceImpl implements TicketActionService {
                 .contactDetails(ticket.getContactDetails())
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
+                .resolutionNote(ticket.getResolutionNote())
+                .resolvedAt(ticket.getResolvedAt())
+                .rejectionNote(ticket.getRejectionNote())
                 .build();
     }
 }

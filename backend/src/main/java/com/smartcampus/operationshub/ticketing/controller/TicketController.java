@@ -1,6 +1,7 @@
 package com.smartcampus.operationshub.ticketing.controller;
 
 import com.smartcampus.operationshub.entity.User;
+import com.smartcampus.operationshub.ticketing.constant.TicketStatus;
 import com.smartcampus.operationshub.ticketing.dto.TicketRequestDTO;
 import com.smartcampus.operationshub.ticketing.dto.TicketResponseDTO;
 import com.smartcampus.operationshub.ticketing.service.TicketService;
@@ -8,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,8 +28,10 @@ public class TicketController {
 
     /**
      * POST: Create a new ticket.
+     * Only USER role can create tickets.
      */
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TicketResponseDTO> createTicket(
             @Valid @RequestBody TicketRequestDTO request,
             @AuthenticationPrincipal User user) {
@@ -38,36 +42,53 @@ public class TicketController {
      * GET: Retrieve all tickets.
      */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECHNICIAN')")
     public ResponseEntity<List<TicketResponseDTO>> getAllTickets() {
         return ResponseEntity.ok(ticketService.getAllTickets());
+    }
+
+    /**
+     * GET: Retrieve public view of all tickets.
+     */
+    @GetMapping("/public")
+    public ResponseEntity<List<TicketResponseDTO>> getPublicTickets() {
+        return ResponseEntity.ok(ticketService.getPublicTickets());
     }
 
     /**
      * GET: Retrieve a ticket by its ID.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<TicketResponseDTO> getTicketById(@PathVariable Long id) {
-        return ResponseEntity.ok(ticketService.getTicketById(id));
+    public ResponseEntity<TicketResponseDTO> getTicketById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(ticketService.getTicketById(id, user.getId(), user.getRole().name()));
     }
 
     /**
      * PUT: Update an existing ticket.
+     * Ownership is validated in the service layer.
      */
     @PutMapping("/{id}")
     public ResponseEntity<TicketResponseDTO> updateTicket(
             @PathVariable Long id,
-            @Valid @RequestBody TicketRequestDTO request) {
-        return ResponseEntity.ok(ticketService.updateTicket(id, request));
+            @Valid @RequestBody TicketRequestDTO request,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(ticketService.updateTicket(id, request, user.getId()));
     }
 
     /**
      * DELETE: Delete a ticket.
+     * Ownership is validated in the service layer.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTicket(@PathVariable Long id) {
-        ticketService.deleteTicket(id);
+    public ResponseEntity<Void> deleteTicket(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        ticketService.deleteTicket(id, user.getId());
         return ResponseEntity.noContent().build();
     }
+
 
     /**
      * GET: Retrieve tickets created by the current authenticated user.

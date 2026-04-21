@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
+const ProtectedRoute = ({ children, requireAdmin = false, allowedRoles = null }) => {
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
@@ -12,6 +12,11 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
 
   // Authenticated but admin-only route and user is not admin
   if (requireAdmin && user.role !== 'ADMIN') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Check specific allowed roles
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 

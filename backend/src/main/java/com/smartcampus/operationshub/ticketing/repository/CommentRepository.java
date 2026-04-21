@@ -16,4 +16,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * Find all comments for a specific ticket.
      */
     List<Comment> findByTicketId(Long ticketId);
+
+    /**
+     * Delete all comments for a specific ticket.
+     */
+    void deleteAllByTicketId(Long ticketId);
 }
