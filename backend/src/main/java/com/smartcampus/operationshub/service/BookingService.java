@@ -266,17 +266,19 @@ public class BookingService {
         }
     }
 
-    public List<java.util.Map<String, Object>> getOccupiedSlots(String dateStr) {
+    public List<java.util.Map<String, Object>> getOccupiedSlots(String dateStr, Integer days) {
         LocalDateTime start;
         LocalDateTime end;
         
+        int daysToFetch = (days != null) ? days : 1;
+
         if (dateStr != null) {
             java.time.LocalDate date = java.time.LocalDate.parse(dateStr);
             start = date.atStartOfDay();
-            end = date.atTime(23, 59, 59);
+            end = date.plusDays(daysToFetch - 1).atTime(23, 59, 59);
         } else {
             start = LocalDateTime.now().withHour(0).withMinute(0);
-            end = LocalDateTime.now().withHour(23).withMinute(59);
+            end = LocalDateTime.now().plusDays(daysToFetch - 1).withHour(23).withMinute(59);
         }
 
         return bookingRepository.findAll().stream()

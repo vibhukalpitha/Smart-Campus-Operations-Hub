@@ -79,7 +79,8 @@ public class BookingController {
     // GET: Occupied slots for all resources on a specific date
     @GetMapping("/occupied")
     public ResponseEntity<List<Map<String, Object>>> getOccupiedSlots(
-            @RequestParam(required = false) String date) {
-        return ResponseEntity.ok(bookingService.getOccupiedSlots(date));
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) Integer days) {
+        return ResponseEntity.ok(bookingService.getOccupiedSlots(date, days));
     }
 }
