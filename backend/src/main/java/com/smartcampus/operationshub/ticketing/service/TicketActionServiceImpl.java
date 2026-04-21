@@ -102,6 +102,26 @@ public class TicketActionServiceImpl implements TicketActionService {
         return mapToResponse(ticketRepository.save(ticket));
     }
 
+    @Override
+    @Transactional
+    public TicketResponseDTO rejectTicket(Long id, String reason) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+
+        if (ticket.getStatus() == TicketStatus.RESOLVED || ticket.getStatus() == TicketStatus.CLOSED) {
+            throw new IllegalStateException("Ticket cannot be rejected as it is already resolved or closed.");
+        }
+
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new IllegalArgumentException("Rejection reason is required.");
+        }
+
+        ticket.setStatus(TicketStatus.REJECTED);
+        ticket.setRejectionNote(reason);
+
+        return mapToResponse(ticketRepository.save(ticket));
+    }
+
     /**
      * Helper method to map Ticket entity to TicketResponseDTO.
      * (Re-implemented as I cannot modify TicketServiceImpl to make it public/extract to a mapper)
@@ -120,6 +140,7 @@ public class TicketActionServiceImpl implements TicketActionService {
                 .updatedAt(ticket.getUpdatedAt())
                 .resolutionNote(ticket.getResolutionNote())
                 .resolvedAt(ticket.getResolvedAt())
+                .rejectionNote(ticket.getRejectionNote())
                 .build();
     }
 }

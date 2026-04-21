@@ -41,4 +41,12 @@ public interface TicketActionService {
      * @return Updated ticket as DTO
      */
     TicketResponseDTO closeTicket(Long id, Long requesterId);
+
+    /**
+     * Reject a ticket (ADMIN only).
+     * @param id Ticket ID
+     * @param reason Rejection reason
+     * @return Updated ticket as DTO
+     */
+    TicketResponseDTO rejectTicket(Long id, String reason);
 }

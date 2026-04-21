@@ -64,4 +64,16 @@ public class TicketActionController {
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.smartcampus.operationshub.entity.User user) {
         return ResponseEntity.ok(ticketActionService.closeTicket(id, user.getId()));
     }
+
+    /**
+     * PATCH /api/tickets/{id}/reject: Reject a ticket.
+     */
+    @PatchMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TicketResponseDTO> rejectTicket(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> payload) {
+        String reason = payload.get("reason");
+        return ResponseEntity.ok(ticketActionService.rejectTicket(id, reason));
+    }
 }

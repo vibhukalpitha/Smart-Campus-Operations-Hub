@@ -66,6 +66,9 @@ public class Ticket {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
+    @Column(name = "rejection_note", columnDefinition = "TEXT")
+    private String rejectionNote;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

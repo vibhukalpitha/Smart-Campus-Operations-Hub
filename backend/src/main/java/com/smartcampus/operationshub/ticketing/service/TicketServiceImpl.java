@@ -177,6 +177,7 @@ public class TicketServiceImpl implements TicketService {
                 .updatedAt(ticket.getUpdatedAt())
                 .resolutionNote(ticket.getResolutionNote())
                 .resolvedAt(ticket.getResolvedAt())
+                .rejectionNote(ticket.getRejectionNote())
                 .build();
     }
 }

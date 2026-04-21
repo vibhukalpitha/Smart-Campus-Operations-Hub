@@ -31,4 +31,5 @@ public class TicketResponseDTO {
     private LocalDateTime updatedAt;
     private String resolutionNote;
     private LocalDateTime resolvedAt;
+    private String rejectionNote;
 }

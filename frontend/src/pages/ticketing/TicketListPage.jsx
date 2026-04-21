@@ -146,7 +146,7 @@ const TicketListPage = () => {
                             />
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map(status => (
+                            {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED'].map(status => (
                                 <button
                                     key={status}
                                     onClick={() => setStatusFilter(status)}

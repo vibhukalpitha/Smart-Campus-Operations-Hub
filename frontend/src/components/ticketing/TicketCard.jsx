@@ -20,6 +20,7 @@ const TicketCard = ({ ticket }) => {
             case 'IN_PROGRESS': return 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
             case 'RESOLVED': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
             case 'CLOSED': return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
+            case 'REJECTED': return 'text-rose-400 bg-rose-400/10 border-rose-400/20';
             default: return 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
         }
     };
@@ -69,6 +70,13 @@ const TicketCard = ({ ticket }) => {
                     </div>
                     <span className="truncate">{ticket.location || (ticket.resourceId ? `Resource ID: ${ticket.resourceId}` : 'Location Not Specified')}</span>
                 </div>
+
+                {ticket.status === 'REJECTED' && ticket.rejectionNote && (
+                    <div className="flex items-start text-rose-400/70 text-[11px] font-medium italic mt-1 bg-rose-500/5 p-2 rounded-lg border border-rose-500/10">
+                        <AlertCircle className="w-3 h-3 mr-2 shrink-0 mt-0.5" />
+                        <span className="line-clamp-1">Rejected: {ticket.rejectionNote}</span>
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center justify-between pt-5 border-t border-white/10 relative z-10">

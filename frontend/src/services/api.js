@@ -137,6 +137,7 @@ export const ticketService = {
     assignTechnician: (id, technicianId) => api.patch(`/tickets/${id}/assign?technicianId=${technicianId}`),
     resolveTicket: (id, resolutionNote) => api.patch(`/tickets/${id}/resolve`, { resolutionNote }),
     closeTicket: (id) => api.patch(`/tickets/${id}/close`),
+    rejectTicket: (id, reason) => api.patch(`/tickets/${id}/reject`, { reason }),
     addComment: (ticketId, data) => api.post(`/tickets/${ticketId}/comments`, data),
     getComments: (ticketId) => api.get(`/tickets/${ticketId}/comments`),
     updateComment: (commentId, data) => api.put(`/tickets/comments/${commentId}`, data),

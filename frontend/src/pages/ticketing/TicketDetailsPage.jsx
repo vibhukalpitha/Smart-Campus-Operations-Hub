@@ -42,6 +42,8 @@ const TicketDetailsPage = () => {
     const [zoomLevel, setZoomLevel] = useState(1);
     const [showResolveModal, setShowResolveModal] = useState(false);
     const [resolutionNoteText, setResolutionNoteText] = useState('');
+    const [showRejectModal, setShowRejectModal] = useState(false);
+    const [rejectionReasonText, setRejectionReasonText] = useState('');
     
     // Assignment states
     const [technicians, setTechnicians] = useState([]);
@@ -214,6 +216,26 @@ const TicketDetailsPage = () => {
         }
     };
 
+    const handleRejectSubmit = async () => {
+        if (!rejectionReasonText.trim()) {
+            alert("Rejection reason is required.");
+            return;
+        }
+        setUpdating(true);
+        try {
+            await ticketService.rejectTicket(id, rejectionReasonText);
+            setShowRejectModal(false);
+            setRejectionReasonText('');
+            alert("Ticket rejected successfully.");
+            await fetchTicketDetails();
+        } catch (err) {
+            console.error("Failed to reject ticket:", err);
+            alert(err.response?.data?.message || "Failed to reject ticket.");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
     const handleAssignTechnician = async () => {
         if (!selectedTechnician) return;
         
@@ -255,7 +277,19 @@ const TicketDetailsPage = () => {
             case 'IN_PROGRESS': return 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
             case 'RESOLVED': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
             case 'CLOSED': return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
+            case 'REJECTED': return 'text-rose-400 bg-rose-400/10 border-rose-400/20';
             default: return 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20';
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'OPEN': return <AlertCircle className="w-4 h-4" />;
+            case 'IN_PROGRESS': return <Settings className="w-4 h-4" />;
+            case 'RESOLVED': return <CheckCircle2 className="w-4 h-4" />;
+            case 'CLOSED': return <CheckCircle2 className="w-4 h-4" />;
+            case 'REJECTED': return <X className="w-4 h-4" />;
+            default: return <AlertCircle className="w-4 h-4" />;
         }
     };
 
@@ -415,6 +449,17 @@ const TicketDetailsPage = () => {
                                                         Mark as Resolved
                                                     </button>
                                                 )}
+
+                                                {/* Admin ONLY Reject Action */}
+                                                {isAdmin && (['OPEN', 'IN_PROGRESS'].includes(ticket.status)) && (
+                                                    <button 
+                                                        disabled={updating}
+                                                        onClick={() => setShowRejectModal(true)}
+                                                        className="bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all"
+                                                    >
+                                                        Reject Ticket
+                                                    </button>
+                                                )}
                                                 
                                                 {/* Owner Actions */}
                                                 {isOwner && (
@@ -449,7 +494,28 @@ const TicketDetailsPage = () => {
                                     )}
                                 </div>
                             </div>
-                            
+                            {/* Rejection Note Display */}
+                            {ticket.rejectionNote && (
+                                <div className="bg-rose-500/5 backdrop-blur-2xl border border-rose-500/20 rounded-[2.5rem] p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="flex items-center justify-between text-rose-400 mb-6">
+                                        <div className="flex items-center">
+                                            <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center mr-4">
+                                                <X className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold">Rejection Reason</h3>
+                                                <p className="text-[10px] uppercase tracking-widest font-bold opacity-60">Declined by Administrator</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-[#0a0f1c]/40 rounded-3xl p-6 border border-white/5">
+                                        <p className="text-white/80 leading-relaxed italic">
+                                            "{ticket.rejectionNote}"
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Resolution Notes Display */}
                             {ticket.resolutionNote && (
                                 <div className="bg-emerald-500/5 backdrop-blur-2xl border border-emerald-500/20 rounded-[2.5rem] p-8 md:p-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -670,6 +736,50 @@ const TicketDetailsPage = () => {
                                 className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white shadow-lg shadow-emerald-600/20 px-6 py-4 rounded-2xl font-bold tracking-widest uppercase transition-all flex justify-center items-center mt-6"
                             >
                                 {updating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Resolution'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Reject Ticket Modal */}
+            {showRejectModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#0a0f1c]/90 backdrop-blur-xl" onClick={() => setShowRejectModal(false)}></div>
+                    <div className="relative bg-[#0d1225] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-white flex items-center">
+                                <X className="w-6 h-6 text-rose-400 mr-3" />
+                                Reject Ticket
+                            </h3>
+                            <button onClick={() => setShowRejectModal(false)} className="p-2 bg-white/5 hover:bg-rose-500/80 hover:text-white rounded-full transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <label className="text-xs font-bold text-indigo-300/60 uppercase tracking-widest">
+                                Rejection Reason <span className="text-rose-500">*</span>
+                            </label>
+                            <textarea 
+                                value={rejectionReasonText}
+                                onChange={(e) => setRejectionReasonText(e.target.value)}
+                                placeholder="Explain why this ticket is being rejected..."
+                                rows="5"
+                                className="w-full bg-[#0a0f1c] border border-white/10 rounded-2xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all resize-none"
+                            ></textarea>
+                            
+                            <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl mt-4">
+                                <p className="text-xs text-rose-400/80 leading-relaxed font-bold">
+                                    Rejecting this ticket will set its status to REJECTED. This action is visible to the ticket creator.
+                                </p>
+                            </div>
+
+                            <button 
+                                onClick={handleRejectSubmit}
+                                disabled={updating || !rejectionReasonText.trim()}
+                                className="w-full bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white shadow-lg shadow-rose-600/20 px-6 py-4 rounded-2xl font-bold tracking-widest uppercase transition-all flex justify-center items-center mt-6"
+                            >
+                                {updating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Rejection'}
                             </button>
                         </div>
                     </div>
