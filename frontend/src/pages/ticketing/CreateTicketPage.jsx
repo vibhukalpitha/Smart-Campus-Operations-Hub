@@ -142,13 +142,23 @@ const CreateTicketPage = () => {
         }
 
         try {
+            let finalLocation = formData.location;
+            if (!isGeneralLocation && formData.resourceId) {
+                const selectedResource = resources.find(r => r.id.toString() === formData.resourceId.toString());
+                if (selectedResource) {
+                    finalLocation = `${selectedResource.id} (${selectedResource.name}${selectedResource.location ? ` - ${selectedResource.location}` : ''})`;
+                } else {
+                     finalLocation = `Resource ID: ${formData.resourceId}`;
+                }
+            }
+
             const ticketData = {
                 description: formData.description,
                 category: finalCategory,
                 priority: formData.priority,
                 contactDetails: formData.contactDetails,
                 resourceId: isGeneralLocation ? null : formData.resourceId,
-                location: isGeneralLocation ? formData.location : resources.find(r => r.id.toString() === formData.resourceId.toString())?.location
+                location: finalLocation
             };
 
             const response = await ticketService.createTicket(ticketData);

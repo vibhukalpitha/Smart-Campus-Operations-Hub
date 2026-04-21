@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, MessageSquare, AlertCircle, User, ArrowRight } from 'lucide-react';
+import { Clock, MessageSquare, AlertCircle, User, ArrowRight, MapPin } from 'lucide-react';
 
 const TicketCard = ({ ticket }) => {
     const navigate = useNavigate();
@@ -51,9 +51,13 @@ const TicketCard = ({ ticket }) => {
                 {ticket.description || 'No description provided'}
             </h3>
             
-            <div className="flex items-center text-white/40 text-xs mb-6">
+            <div className="flex flex-wrap gap-2 text-white/40 text-xs mb-6">
                 <span className="bg-white/5 px-2 py-0.5 rounded-lg border border-white/5 font-medium tracking-wide">
                     {ticket.category}
+                </span>
+                <span className="bg-white/5 px-2 py-0.5 rounded-lg border border-white/5 font-medium tracking-wide flex items-center max-w-[200px]" title={ticket.location || (ticket.resourceId ? `Resource ID: ${ticket.resourceId}` : 'Not Specified')}>
+                    <MapPin className="w-3 h-3 mr-1 shrink-0" />
+                    <span className="truncate">{ticket.location || (ticket.resourceId ? `Resource ID: ${ticket.resourceId}` : 'Not Specified')}</span>
                 </span>
             </div>
 
