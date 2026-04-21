@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { resourceService, bookingService } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { MapPin, Users, Info, Calendar, Clock3, Filter, CheckCircle, XCircle, X, ArrowLeft } from 'lucide-react';
+import { MapPin, Users, Info, Calendar, Clock3, Filter, CheckCircle, XCircle, X, ArrowLeft, Clock, Send } from 'lucide-react';
 
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'PROJECTOR', 'CAMERA', 'EQUIPMENT'];
 
@@ -16,6 +16,10 @@ const ResourceListPage = () => {
     const [occupiedSlots, setOccupiedSlots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [fullSchedule, setFullSchedule] = useState([]);
+    const [fetchingSchedule, setFetchingSchedule] = useState(false);
+    const [selectedResource, setSelectedResource] = useState(null);
     const navigate = useNavigate();
 
     const userRole = (() => {
@@ -55,7 +59,23 @@ const ResourceListPage = () => {
 
     useEffect(() => {
         fetchResources();
-    }, [filters, page, sort]);
+    }, [page, filters, lockedType]);
+
+    const handleViewSchedule = async (res) => {
+        setSelectedResource(res);
+        setShowScheduleModal(true);
+        setFetchingSchedule(true);
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const response = await bookingService.getOccupiedSlots(today, 7);
+            const filtered = (response.data || []).filter(s => s.resourceId.toString() === res.id.toString());
+            setFullSchedule(filtered);
+        } catch (err) {
+            console.error("Failed to fetch full schedule", err);
+        } finally {
+            setFetchingSchedule(false);
+        }
+    };
 
     const fetchResources = async () => {
         setLoading(true);
@@ -502,17 +522,29 @@ const ResourceListPage = () => {
                                                     </div>
                                                 )}
 
-                                                <button
-                                                    onClick={() => navigate(`/book/${res.id}`)}
-                                                    disabled={res.status !== 'ACTIVE' || (userRole === 'USER' && full)}
-                                                    className={`w-full py-3 text-white text-sm font-bold rounded-xl transition-all shadow-lg ${
-                                                        (res.status !== 'ACTIVE' || (userRole === 'USER' && full))
-                                                            ? 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'
-                                                            : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 group-hover:shadow-blue-500/40'
-                                                    }`}
-                                                >
-                                                    {full && userRole === 'USER' ? 'No Seats Available' : res.status !== 'ACTIVE' ? 'Unavailable' : 'Book This Resource'}
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => navigate(`/book/${res.id}`)}
+                                                        disabled={res.status !== 'ACTIVE' || (userRole === 'USER' && full)}
+                                                        className={`flex-1 py-3 text-white text-sm font-bold rounded-xl transition-all shadow-lg ${
+                                                            (res.status !== 'ACTIVE' || (userRole === 'USER' && full))
+                                                                ? 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'
+                                                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 group-hover:shadow-blue-500/40'
+                                                        }`}
+                                                    >
+                                                        {full && userRole === 'USER' ? 'No Seats Available' : res.status !== 'ACTIVE' ? 'Unavailable' : 'Book Now'}
+                                                    </button>
+                                                    
+                                                    {userRole === 'LECTURER' && (
+                                                        <button
+                                                            onClick={() => handleViewSchedule(res)}
+                                                            className="px-4 py-3 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-blue-500/50 rounded-xl text-blue-400 transition-all flex items-center justify-center group/btn"
+                                                            title="View Full Schedule"
+                                                        >
+                                                            <Calendar className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -545,6 +577,104 @@ const ResourceListPage = () => {
                     )}
                 </div>
             </main>
+
+            {/* Schedule Modal */}
+            {showScheduleModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div 
+                       className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                       onClick={() => setShowScheduleModal(false)}
+                    ></div>
+                    
+                    <div className="relative w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
+                            <div>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-blue-400" />
+                                    Schedule for {selectedResource?.name}
+                                </h3>
+                                <p className="text-xs text-white/40 mt-1">Showing bookings for the next 7 days</p>
+                            </div>
+                            <button 
+                               onClick={() => setShowScheduleModal(false)}
+                               className="p-2 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors"
+                            >
+                                <XCircle className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            {fetchingSchedule ? (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                    <p className="text-white/40 text-sm">Fetching resource schedule...</p>
+                                </div>
+                            ) : fullSchedule.length === 0 ? (
+                                <div className="text-center py-12 px-6">
+                                    <div className="w-16 h-16 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                        <Clock3 className="w-8 h-8 text-blue-400/40" />
+                                    </div>
+                                    <h4 className="text-white font-semibold mb-1">No Bookings Found</h4>
+                                    <p className="text-white/40 text-sm">This resource is completely free for the next 7 days.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {/* Group by Day */}
+                                    {Array.from(new Set(fullSchedule.map(s => {
+                                        const dt = s.startTime;
+                                        return typeof dt === 'string' ? dt.split('T')[0] : new Date(dt).toISOString().split('T')[0];
+                                    }))).sort().map(dateStr => (
+                                        <div key={dateStr} className="space-y-2">
+                                            <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest pl-2">
+                                                {new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                            </h4>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {fullSchedule
+                                                   .filter(s => {
+                                                       const dt = s.startTime;
+                                                       const sDate = typeof dt === 'string' ? dt.split('T')[0] : new Date(dt).toISOString().split('T')[0];
+                                                       return sDate === dateStr;
+                                                   })
+                                                   .sort((a,b) => new Date(a.startTime) - new Date(b.startTime))
+                                                   .map((slot, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/[0.07] transition-colors group">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                                                <Clock className="w-5 h-5 text-blue-400" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-white font-mono">
+                                                                    {new Date(slot.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(slot.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                </p>
+                                                                <p className="text-[10px] text-white/40 font-medium">{slot.userEmail}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="px-3 py-1 bg-red-400/10 border border-red-400/20 rounded-full">
+                                                            <span className="text-[10px] font-bold text-red-400 uppercase">Occupied</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 bg-white/5 border-t border-white/10 flex justify-end">
+                            <button
+                               onClick={() => navigate(`/book/${selectedResource?.id}`)}
+                               className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+                            >
+                                <Send className="w-4 h-4" /> Book Available Slot
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Footer />
         </div>
