@@ -26,4 +26,5 @@ public class BookingResponse {
     // Additional computed fields for Lecturer Sessions
     private Integer bookedSeats;
     private Integer availableSeats;
+    private java.util.List<String> suggestedSlots;
 }

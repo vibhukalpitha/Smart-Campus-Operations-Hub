@@ -75,4 +75,12 @@ public class BookingController {
     public ResponseEntity<List<BookingResponse>> getAllLecturerSessions() {
         return ResponseEntity.ok(bookingService.getAllLecturerSessions());
     }
+
+    // GET: Occupied slots for all resources on a specific date
+    @GetMapping("/occupied")
+    public ResponseEntity<List<Map<String, Object>>> getOccupiedSlots(
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) Integer days) {
+        return ResponseEntity.ok(bookingService.getOccupiedSlots(date, days));
+    }
 }
