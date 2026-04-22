@@ -16,6 +16,7 @@ import MyBookingsPage from './pages/MyBookingsPage';
 import AdminBookingsPage from './pages/AdminBookingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomeRedirect from './components/HomeRedirect';
+import AiChatBot from './components/AiChatBot';
 
 // Ticketing Module
 import CreateTicketPage from './pages/ticketing/CreateTicketPage';
@@ -125,6 +126,7 @@ function App() {
             }
           />
         </Routes>
+        {localStorage.getItem('token') && <AiChatBot />}
       </div>
     </Router>
   );
