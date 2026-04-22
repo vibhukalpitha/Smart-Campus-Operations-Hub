@@ -465,10 +465,12 @@ const ResourceListPage = () => {
                                                         <MapPin className="w-4 h-4 mr-2 text-blue-400/60 flex-shrink-0" />
                                                         {res.location}
                                                     </div>
-                                                    <div className="flex items-center text-sm text-white/60">
-                                                        <Users className="w-4 h-4 mr-2 text-purple-400/60 flex-shrink-0" />
-                                                        Total Capacity: {res.capacity} persons
-                                                    </div>
+                                                    {res.type !== 'CRICKET' && (
+                                                        <div className="flex items-center text-sm text-white/60">
+                                                            <Users className="w-4 h-4 mr-2 text-purple-400/60 flex-shrink-0" />
+                                                            Total Capacity: {res.capacity} persons
+                                                        </div>
+                                                    )}
                                                     {userRole !== 'LECTURER' && (
                                                         <div className="flex items-center text-sm text-white/60">
                                                             <Clock3 className="w-4 h-4 mr-2 text-emerald-400/60 flex-shrink-0" />

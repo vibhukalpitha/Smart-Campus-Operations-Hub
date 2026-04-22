@@ -149,6 +149,16 @@ const ResourceTypeCatalogPage = () => {
     const navigate = useNavigate();
     const [expandedKey, setExpandedKey] = useState(null);
 
+    const userRole = JSON.parse(localStorage.getItem('user'))?.role;
+
+    // Filter catalog based on role
+    const filteredCatalog = CATALOG.filter(cat => {
+        if (cat.key === 'SPORT') {
+            return userRole === 'USER'; // Only show to students/users
+        }
+        return true;
+    });
+
     const openTypeResources = (type) => {
         navigate(`/resources/type/${type}`);
     };
@@ -189,7 +199,7 @@ const ResourceTypeCatalogPage = () => {
 
                     {/* Category / type cards grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {CATALOG.map((cat) => {
+                        {filteredCatalog.map((cat) => {
                             const Icon = cat.icon;
                             const isExpanded = expandedKey === cat.key;
 

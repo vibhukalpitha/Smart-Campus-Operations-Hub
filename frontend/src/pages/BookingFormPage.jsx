@@ -30,6 +30,11 @@ const BookingFormPage = () => {
     const [lecturerSessions, setLecturerSessions] = useState([]);
     const [occupiedSlots, setOccupiedSlots] = useState([]);
     const [selectedSessionId, setSelectedSessionId] = useState('');
+    
+    // Sports specific state
+    const [batsCount, setBatsCount] = useState(0);
+    const [ballsCount, setBallsCount] = useState(0);
+    const [stumpsCount, setStumpsCount] = useState(0);
 
     useEffect(() => {
         const userStr = localStorage.getItem('user');
@@ -91,7 +96,9 @@ const BookingFormPage = () => {
         }
 
         let finalPurpose = purpose;
-        if (selectedEquipment.length > 0) {
+        if (resource.type === 'CRICKET') {
+            finalPurpose += `\n\nSports Gear Required: ${batsCount} Bats, ${ballsCount} Balls, ${stumpsCount} Stumps`;
+        } else if (selectedEquipment.length > 0) {
             finalPurpose += `\n\nRequested Additional Equipment: ${selectedEquipment.join(', ')}`;
         }
         const finalAttendees = user?.role === 'LECTURER' ? resource.capacity : parseInt(attendees);
@@ -158,10 +165,12 @@ const BookingFormPage = () => {
                                     <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Location</p>
                                     <p className="text-white/80">{resource.location}</p>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Max Capacity</p>
-                                    <p className="text-white/80">{resource.capacity} persons</p>
-                                </div>
+                                {resource.type !== 'CRICKET' && (
+                                    <div>
+                                        <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Max Capacity</p>
+                                        <p className="text-white/80">{resource.capacity} persons</p>
+                                    </div>
+                                )}
                                  {user?.role === 'USER' ? (
                                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
                                          <p className="text-xs text-emerald-400 font-bold uppercase mb-2">Student Booking</p>
@@ -323,7 +332,7 @@ const BookingFormPage = () => {
                              )}
 
                                 {/* Attendees - ONLY FOR STUDENTS (USER) */}
-                                {user?.role === 'USER' && (
+                                {(user?.role === 'USER' && resource.type !== 'CRICKET') && (
                                     <div className="space-y-2 pt-2">
                                         <label className="text-sm font-semibold text-white/70 flex items-center justify-between">
                                             <div className="flex items-center">
@@ -357,8 +366,8 @@ const BookingFormPage = () => {
                                     ></textarea>
                                 </div>
 
-                                {/* Equipment (Lecturer Only) */}
-                                {user?.role === 'LECTURER' && (
+                                {/* Equipment (Lecturer Only) - HIDE FOR CRICKET */}
+                                {(user?.role === 'LECTURER' && resource.type !== 'CRICKET') && (
                                     <div className="space-y-3">
                                         <label className="text-sm font-semibold text-white/70 flex items-center">
                                             <Wrench className="w-4 h-4 mr-2 text-indigo-400" /> Additional Requirements
@@ -381,6 +390,29 @@ const BookingFormPage = () => {
                                                     <span className="text-sm font-medium text-white/80">{item}</span>
                                                 </label>
                                             ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Sports Gear (CRICKET ONLY) */}
+                                {resource.type === 'CRICKET' && (
+                                    <div className="space-y-4">
+                                        <label className="text-sm font-semibold text-white/70 flex items-center uppercase tracking-widest text-[10px]">
+                                            Sports Gear Configuration
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                           <div className="space-y-2">
+                                               <label className="text-xs text-white/40">Bats</label>
+                                               <input type="number" min="0" value={batsCount} onChange={(e) => setBatsCount(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500/50 transition-all" placeholder="0" />
+                                           </div>
+                                           <div className="space-y-2">
+                                               <label className="text-xs text-white/40">Balls</label>
+                                               <input type="number" min="0" value={ballsCount} onChange={(e) => setBallsCount(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500/50 transition-all" placeholder="0" />
+                                           </div>
+                                           <div className="space-y-2">
+                                               <label className="text-xs text-white/40">Stumps</label>
+                                               <input type="number" min="0" value={stumpsCount} onChange={(e) => setStumpsCount(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500/50 transition-all" placeholder="0" />
+                                           </div>
                                         </div>
                                     </div>
                                 )}
