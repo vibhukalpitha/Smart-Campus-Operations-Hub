@@ -93,7 +93,7 @@ const ResourceListPage = () => {
         setLoading(true);
         setError(null);
         try {
-            if (userRole === 'USER') {
+            if (userRole === 'USER' && !['CRICKET', 'BADMINTON', 'SPORT'].includes(filters.type)) {
                 const response = await bookingService.getAllLecturerSessions();
                 const sessions = response.data || [];
                 
@@ -465,11 +465,13 @@ const ResourceListPage = () => {
                                                         <MapPin className="w-4 h-4 mr-2 text-blue-400/60 flex-shrink-0" />
                                                         {res.location}
                                                     </div>
-                                                    <div className="flex items-center text-sm text-white/60">
-                                                        <Users className="w-4 h-4 mr-2 text-purple-400/60 flex-shrink-0" />
-                                                        Total Capacity: {res.capacity} persons
-                                                    </div>
-                                                    {userRole !== 'LECTURER' && (
+                                                    {!['CRICKET', 'PROJECTOR', 'CAMERA', 'SMART_BOARD'].includes(res.type) && (
+                                                        <div className="flex items-center text-sm text-white/60">
+                                                            <Users className="w-4 h-4 mr-2 text-purple-400/60 flex-shrink-0" />
+                                                            Total Capacity: {res.capacity} persons
+                                                        </div>
+                                                    )}
+                                                    {!(userRole === 'LECTURER' || ['CRICKET', 'BADMINTON', 'SPORT'].includes(res.type)) && (
                                                         <div className="flex items-center text-sm text-white/60">
                                                             <Clock3 className="w-4 h-4 mr-2 text-emerald-400/60 flex-shrink-0" />
                                                             Availability: {getAvailabilityText(res)}
@@ -477,8 +479,8 @@ const ResourceListPage = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Seat Availability Section */}
-                                                {userRole !== 'LECTURER' && (
+                                                {/* Seat Availability Section - HIDE FOR SPORT TYPES */}
+                                                {userRole !== 'LECTURER' && !['CRICKET', 'BADMINTON', 'SPORT'].includes(res.type) && (
                                                     <div className="mb-5 p-3 rounded-xl bg-white/5 border border-white/10">
                                                         <div className="flex justify-between items-center mb-2">
                                                             <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">Seat Availability</span>
@@ -490,7 +492,7 @@ const ResourceListPage = () => {
                                                                 <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
                                                                     <CheckCircle className="w-3 h-3" />
                                                                     {res.availableSeats != null ? res.availableSeats : res.capacity} left
-                                                                </span>
+                                                                 </span>
                                                             )}
                                                         </div>
 
