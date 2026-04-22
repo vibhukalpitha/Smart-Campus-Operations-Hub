@@ -156,4 +156,8 @@ export const ticketService = {
     getImages: (ticketId) => api.get(`/tickets/${ticketId}/images`)
 };
 
+export const aiService = {
+    chat: (message) => api.post('/ai/chat', { message })
+};
+
 export default api;

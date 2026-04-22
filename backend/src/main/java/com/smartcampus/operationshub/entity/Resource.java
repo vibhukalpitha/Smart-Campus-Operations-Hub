@@ -26,7 +26,7 @@ public class Resource {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     @NotNull(message = "Resource type cannot be null")
     private ResourceType type;
 
@@ -49,6 +49,36 @@ public class Resource {
 
     @Column(name = "available_to")
     private LocalTime availableTo;
+
+    // ── Public Computers metadata ────────────────────────────────────────
+    @Column(name = "device_brand")
+    private String deviceBrand;
+
+    @Column(name = "processor")
+    private String processor;
+
+    @Column(name = "ram_capacity")
+    private String ramCapacity;
+
+    @Column(name = "network_access")
+    private String networkAccess;
+
+    // ── Cricket metadata ─────────────────────────────────────────────────
+    @Column(name = "bats")
+    private Integer bats;
+
+    @Column(name = "balls")
+    private Integer balls;
+
+    @Column(name = "stumps")
+    private Integer stumps;
+
+    // ── Badminton metadata ───────────────────────────────────────────────
+    @Column(name = "rackets")
+    private Integer rackets;
+
+    @Column(name = "shuttlecocks")
+    private Integer shuttlecocks;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default

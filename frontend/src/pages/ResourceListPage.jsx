@@ -5,7 +5,19 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { MapPin, Users, Info, Calendar, Clock3, Filter, CheckCircle, XCircle, X, ArrowLeft, Clock, Send } from 'lucide-react';
 
-const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'PROJECTOR', 'CAMERA', 'EQUIPMENT'];
+const RESOURCE_TYPES = [
+    'LECTURE_HALL',
+    'LAB',
+    'MEETING_ROOM',
+    'PROJECTOR',
+    'CAMERA',
+    'EQUIPMENT',
+    'PUBLIC_COMPUTERS',
+    'SMART_BOARD',
+    'CRICKET',
+    'BADMINTON',
+];
+
 
 const ResourceListPage = () => {
     const { type: typeParam } = useParams();
