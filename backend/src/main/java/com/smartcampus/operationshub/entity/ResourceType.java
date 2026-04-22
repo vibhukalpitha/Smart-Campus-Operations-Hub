@@ -6,5 +6,9 @@ public enum ResourceType {
     MEETING_ROOM,
     PROJECTOR,
     CAMERA,
-    EQUIPMENT
+    EQUIPMENT,
+    PUBLIC_COMPUTERS,
+    SMART_BOARD,
+    CRICKET,
+    BADMINTON
 }
