@@ -29,5 +29,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
            "WHERE b.resource.id = :resourceId " +
            "AND b.status = com.smartcampus.operationshub.entity.BookingStatus.APPROVED")
     Long sumApprovedAttendeesByResourceId(@Param("resourceId") Long resourceId);
+
+    @Query("SELECT b FROM Booking b WHERE b.resource.id = :resourceId " +
+           "AND b.user.role = com.smartcampus.operationshub.entity.Role.LECTURER " +
+           "AND b.status = com.smartcampus.operationshub.entity.BookingStatus.APPROVED " +
+           "AND b.startTime > CURRENT_TIMESTAMP " +
+           "ORDER BY b.startTime ASC")
+    List<Booking> findFutureLecturerBookings(@Param("resourceId") Long resourceId);
+
+    @Query("SELECT b FROM Booking b WHERE b.user.role = com.smartcampus.operationshub.entity.Role.LECTURER " +
+           "AND b.status = com.smartcampus.operationshub.entity.BookingStatus.APPROVED " +
+           "AND b.startTime > CURRENT_TIMESTAMP " +
+           "ORDER BY b.startTime ASC")
+    List<Booking> findAllFutureLecturerBookings();
 }
 

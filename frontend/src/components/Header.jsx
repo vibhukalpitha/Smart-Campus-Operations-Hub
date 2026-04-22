@@ -34,6 +34,12 @@ const Header = () => {
             </Link>
             
             <div className="flex space-x-6 items-center">
+                {user && (
+                    <nav className="hidden md:flex items-center space-x-6 mr-4 border-r border-white/10 pr-6">
+                        <Link to="/resources" className="text-sm font-medium text-white/60 hover:text-white transition-colors">Resources</Link>
+                        <Link to="/tickets" className="text-sm font-medium text-white/60 hover:text-white transition-colors">Support</Link>
+                    </nav>
+                )}
                 {user && <NotificationPanel />}
                 {!user ? (
                     <Link to="/login" className="text-sm font-semibold text-indigo-300 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-lg border border-white/10 hover:bg-white/10 shadow-lg relative z-20">

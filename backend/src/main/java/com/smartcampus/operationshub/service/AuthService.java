@@ -48,7 +48,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER) // default to USER. Can be changed by DB/admin
-                .emailVerified(false)
+                .emailVerified(true)
                 .verificationToken(vToken)
                 .dateOfBirth(request.getDateOfBirth())
                 .gender(request.getGender())
@@ -97,6 +97,7 @@ public class AuthService {
         var jwtToken = jwtUtil.generateToken(user);
 
         return AuthResponse.builder()
+                .id(user.getId())
                 .token(jwtToken)
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
@@ -151,6 +152,7 @@ public class AuthService {
 
         var jwtToken = jwtUtil.generateToken(user);
         return AuthResponse.builder()
+                .id(user.getId())
                 .token(jwtToken)
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
@@ -232,6 +234,99 @@ public class AuthService {
         
         String jwtToken = jwtUtil.generateToken(user);
         return AuthResponse.builder()
+                .id(user.getId())
+                .token(jwtToken)
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .role(user.getRole())
+                .profilePicture(user.getProfilePicture())
+                .build();
+    }
+
+    @org.springframework.beans.factory.annotation.Value("${google.client.id:}")
+    private String googleClientId;
+
+    @org.springframework.beans.factory.annotation.Value("${google.client.secret:}")
+    private String googleClientSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${google.redirect.uri:}")
+    private String googleRedirectUri;
+
+    public AuthResponse googleLogin(String code) {
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+        
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
+        
+        org.springframework.util.MultiValueMap<String, String> map = new org.springframework.util.LinkedMultiValueMap<>();
+        map.add("client_id", googleClientId);
+        map.add("client_secret", googleClientSecret);
+        map.add("code", code);
+        map.add("grant_type", "authorization_code");
+        map.add("redirect_uri", googleRedirectUri);
+        
+        org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, String>> request = new org.springframework.http.HttpEntity<>(map, headers);
+        
+        org.springframework.http.ResponseEntity<java.util.Map> response;
+        try {
+            response = restTemplate.postForEntity("https://oauth2.googleapis.com/token", request, java.util.Map.class);
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            throw new RuntimeException("Google oauth token error: " + e.getResponseBodyAsString());
+        }
+        
+        String accessToken = (String) response.getBody().get("access_token");
+        if (accessToken == null) {
+            throw new RuntimeException("Failed to get access token from Google.");
+        }
+        
+        org.springframework.http.HttpHeaders userHeaders = new org.springframework.http.HttpHeaders();
+        userHeaders.setBearerAuth(accessToken);
+        org.springframework.http.HttpEntity<String> userRequest = new org.springframework.http.HttpEntity<>(userHeaders);
+        
+        org.springframework.http.ResponseEntity<java.util.Map> userResponse;
+        try {
+            userResponse = restTemplate.exchange("https://www.googleapis.com/oauth2/v3/userinfo", org.springframework.http.HttpMethod.GET, userRequest, java.util.Map.class);
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            throw new RuntimeException("Google user profile fetch error: " + e.getResponseBodyAsString());
+        }
+        
+        java.util.Map<String, Object> userData = userResponse.getBody();
+        String stringEmail = (String) userData.get("email");
+        String name = (String) userData.get("name");
+        String givenName = (String) userData.get("given_name");
+        String familyName = (String) userData.get("family_name");
+        String avatarUrl = (String) userData.get("picture");
+        
+        if (stringEmail == null) {
+            throw new RuntimeException("Email not provided by Google.");
+        }
+        
+        if (givenName == null && name != null) {
+             givenName = name.split(" ")[0];
+             familyName = name.split(" ").length > 1 ? name.substring(name.indexOf(" ") + 1) : "";
+        } else if (givenName == null) {
+             givenName = "GoogleUser";
+             familyName = "";
+        }
+        
+        User user = userRepository.findByEmail(stringEmail).orElse(null);
+        if (user == null) {
+            user = User.builder()
+                .firstName(givenName)
+                .lastName(familyName)
+                .email(stringEmail)
+                .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .role(Role.USER)
+                .emailVerified(true)
+                .profilePicture(avatarUrl)
+                .build();
+            userRepository.save(user);
+        }
+        
+        String jwtToken = jwtUtil.generateToken(user);
+        return AuthResponse.builder()
+                .id(user.getId())
                 .token(jwtToken)
                 .email(user.getEmail())
                 .firstName(user.getFirstName())

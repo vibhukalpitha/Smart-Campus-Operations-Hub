@@ -31,5 +31,9 @@ public class TicketRequestDTO {
 
     private Long assignedTo;
 
+    private Long resourceId;
+
+    private String location;
+
     private String contactDetails;
 }

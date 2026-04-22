@@ -17,6 +17,12 @@ import AdminBookingsPage from './pages/AdminBookingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomeRedirect from './components/HomeRedirect';
 
+// Ticketing Module
+import CreateTicketPage from './pages/ticketing/CreateTicketPage';
+import TicketListPage from './pages/ticketing/TicketListPage';
+import TicketDetailsPage from './pages/ticketing/TicketDetailsPage';
+import EditTicketPage from './pages/ticketing/EditTicketPage';
+
 function App() {
   return (
     <Router>
@@ -40,6 +46,40 @@ function App() {
           <Route path="/resources/type/:type" element={<ResourceListPage />} />
           <Route path="/book/:id" element={<BookingFormPage />} />
           <Route path="/my-bookings" element={<MyBookingsPage />} />
+
+          {/* Ticketing Module Routes */}
+          <Route
+            path="/tickets"
+            element={
+              <ProtectedRoute>
+                <TicketListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets/create"
+            element={
+              <ProtectedRoute allowedRoles={['USER']}>
+                <CreateTicketPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets/:id"
+            element={
+              <ProtectedRoute>
+                <TicketDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tickets/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditTicketPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Module A: Facilities & Assets - Admin Only Routes */}
           <Route

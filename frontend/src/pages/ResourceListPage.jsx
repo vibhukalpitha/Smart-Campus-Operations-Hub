@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { resourceService } from '../services/api';
+import { resourceService, bookingService } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { MapPin, Users, Info, Calendar, Clock3, Filter, CheckCircle, XCircle, X, ArrowLeft } from 'lucide-react';
+import { MapPin, Users, Info, Calendar, Clock3, Filter, CheckCircle, XCircle, X, ArrowLeft, Clock, Send } from 'lucide-react';
 
 const RESOURCE_TYPES = ['LECTURE_HALL', 'LAB', 'MEETING_ROOM', 'PROJECTOR', 'CAMERA', 'EQUIPMENT'];
 
@@ -13,9 +13,19 @@ const ResourceListPage = () => {
     const isTypeLocked = Boolean(lockedType);
 
     const [resources, setResources] = useState([]);
+    const [occupiedSlots, setOccupiedSlots] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
+    const [fullSchedule, setFullSchedule] = useState([]);
+    const [fetchingSchedule, setFetchingSchedule] = useState(false);
+    const [selectedResource, setSelectedResource] = useState(null);
     const navigate = useNavigate();
+
+    const userRole = (() => {
+        const userStr = localStorage.getItem('user');
+        return userStr && userStr !== "undefined" ? JSON.parse(userStr).role : null;
+    })();
 
     // Combined filter states
     const [filters, setFilters] = useState({
@@ -49,34 +59,106 @@ const ResourceListPage = () => {
 
     useEffect(() => {
         fetchResources();
-    }, [filters, page, sort]);
+    }, [page, filters, lockedType]);
+
+    const handleViewSchedule = async (res) => {
+        setSelectedResource(res);
+        setShowScheduleModal(true);
+        setFetchingSchedule(true);
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const response = await bookingService.getOccupiedSlots(today, 7);
+            const filtered = (response.data || []).filter(s => s.resourceId.toString() === res.id.toString());
+            setFullSchedule(filtered);
+        } catch (err) {
+            console.error("Failed to fetch full schedule", err);
+        } finally {
+            setFetchingSchedule(false);
+        }
+    };
 
     const fetchResources = async () => {
         setLoading(true);
         setError(null);
         try {
-            // Build params object with only non-null/non-empty values
-            const params = {};
-            if (filters.searchTerm) params.name = filters.searchTerm;
-            if (filters.type) params.type = filters.type;
-            if (filters.minCapacity) params.minCapacity = parseInt(filters.minCapacity);
-            if (filters.location) params.location = filters.location;
-            if (filters.status) params.status = filters.status;
+            if (userRole === 'USER') {
+                const response = await bookingService.getAllLecturerSessions();
+                const sessions = response.data || [];
+                
+                // Map each session to a card format
+                const mappedResources = sessions.map((session, index) => {
+                    const startDt = new Date(session.startTime);
+                    const endDt = new Date(session.endTime);
+                    const dateStr = startDt.toLocaleDateString();
+                    
+                    return {
+                        _uniqueId: `${session.id}_${index}`, // For React key
+                        id: session.resourceId, // For routing to /book/:id
+                        name: session.purpose ? session.purpose.split('\n')[0] : 'Lecture Session',
+                        type: session.resourceType || 'LECTURE_HALL',
+                        status: 'ACTIVE',
+                        capacity: session.expectedAttendees,
+                        location: `${session.resourceName} | ${dateStr}`,
+                        availableFrom: session.startTime.split('T')[1].substring(0,5),
+                        availableTo: session.endTime.split('T')[1].substring(0,5),
+                        availableSeats: session.availableSeats != null ? session.availableSeats : session.expectedAttendees,
+                        bookedCount: session.bookedSeats != null ? session.bookedSeats : 0
+                    };
+                });
 
-            const paging = { page, size: pageSize, sort };
+                let filtered = mappedResources;
+                if (filters.searchTerm) {
+                    const term = filters.searchTerm.toLowerCase();
+                    filtered = filtered.filter(r => r.name.toLowerCase().includes(term) || r.location.toLowerCase().includes(term));
+                }
+                if (filters.type) {
+                    filtered = filtered.filter(r => r.type === filters.type);
+                }
+                if (filters.minCapacity) filtered = filtered.filter(r => r.capacity >= parseInt(filters.minCapacity));
+                if (filters.location) filtered = filtered.filter(r => r.location.toLowerCase().includes(filters.location.toLowerCase()));
 
-            const response = await resourceService.searchResources(params, paging);
-            const payload = response.data || response;
-            const pageContent = Array.isArray(payload) ? payload : (payload.content || []);
+                setTotalElements(filtered.length);
+                const pagedContent = filtered.slice(page * pageSize, (page + 1) * pageSize);
+                setTotalPages(Math.ceil(filtered.length / pageSize) || 1);
+                setResources(pagedContent);
 
-            setResources(pageContent);
-
-            if (Array.isArray(payload)) {
-                setTotalPages(1);
-                setTotalElements(pageContent.length);
             } else {
-                setTotalPages(Math.max(1, payload.totalPages || 1));
-                setTotalElements(payload.totalElements ?? pageContent.length);
+                // Original fetching logic for Admin/Lecturer/Tech
+                const params = {};
+                if (filters.searchTerm) params.name = filters.searchTerm;
+                if (filters.type) params.type = filters.type;
+                if (filters.minCapacity) params.minCapacity = parseInt(filters.minCapacity);
+                if (filters.location) params.location = filters.location;
+                if (filters.status) params.status = filters.status;
+
+                const paging = { page, size: pageSize, sort };
+
+                const response = await resourceService.searchResources(params, paging);
+                const payload = response.data || response;
+                const pageContent = Array.isArray(payload) ? payload : (payload.content || []);
+
+                // Enhance with _uniqueId
+                const enhancedContent = pageContent.map(r => ({ ...r, _uniqueId: r.id.toString() }));
+
+                setResources(enhancedContent);
+
+                if (userRole === 'LECTURER' || userRole === 'ADMIN') {
+                    try {
+                        const today = new Date().toISOString().split('T')[0];
+                        const occResponse = await bookingService.getOccupiedSlots(today);
+                        setOccupiedSlots(occResponse.data || []);
+                    } catch (occErr) {
+                        console.error("Failed to fetch occupied slots", occErr);
+                    }
+                }
+
+                if (Array.isArray(payload)) {
+                    setTotalPages(1);
+                    setTotalElements(pageContent.length);
+                } else {
+                    setTotalPages(Math.max(1, payload.totalPages || 1));
+                    setTotalElements(payload.totalElements ?? pageContent.length);
+                }
             }
         } catch (err) {
             console.error("Failed to fetch resources", err);
@@ -324,7 +406,7 @@ const ResourceListPage = () => {
 
                                     return (
                                         <div
-                                            key={res.id}
+                                            key={res._uniqueId}
                                             className="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2"
                                         >
                                             {/* Card Header Image Area */}
@@ -351,8 +433,8 @@ const ResourceListPage = () => {
                                                     </span>
                                                 </div>
 
-                                                {/* FULL Overlay */}
-                                                {full && (
+                                                {/* FULL Overlay - Only for regular USERS */}
+                                                {(full && userRole === 'USER') && (
                                                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                                                         <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-4 py-2 rounded-full">
                                                             <XCircle className="w-4 h-4 text-red-400" />
@@ -375,57 +457,94 @@ const ResourceListPage = () => {
                                                         <Users className="w-4 h-4 mr-2 text-purple-400/60 flex-shrink-0" />
                                                         Total Capacity: {res.capacity} persons
                                                     </div>
-                                                    <div className="flex items-center text-sm text-white/60">
-                                                        <Clock3 className="w-4 h-4 mr-2 text-emerald-400/60 flex-shrink-0" />
-                                                        Availability: {getAvailabilityText(res)}
-                                                    </div>
+                                                    {userRole !== 'LECTURER' && (
+                                                        <div className="flex items-center text-sm text-white/60">
+                                                            <Clock3 className="w-4 h-4 mr-2 text-emerald-400/60 flex-shrink-0" />
+                                                            Availability: {getAvailabilityText(res)}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Seat Availability Section */}
-                                                <div className="mb-5 p-3 rounded-xl bg-white/5 border border-white/10">
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">Seat Availability</span>
-                                                        {full ? (
-                                                            <span className="text-xs font-bold text-red-400 flex items-center gap-1">
-                                                                <XCircle className="w-3 h-3" /> Full
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                                                                <CheckCircle className="w-3 h-3" />
-                                                                {res.availableSeats != null ? res.availableSeats : res.capacity} left
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                {userRole !== 'LECTURER' && (
+                                                    <div className="mb-5 p-3 rounded-xl bg-white/5 border border-white/10">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">Seat Availability</span>
+                                                            {full ? (
+                                                                <span className="text-xs font-bold text-red-400 flex items-center gap-1">
+                                                                    <XCircle className="w-3 h-3" /> Full
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                                                                    <CheckCircle className="w-3 h-3" />
+                                                                    {res.availableSeats != null ? res.availableSeats : res.capacity} left
+                                                                </span>
+                                                            )}
+                                                        </div>
 
-                                                    {/* Progress Bar */}
-                                                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${getCapacityColor(res.availableSeats, res.capacity)}`}
-                                                            style={{ width: getCapacityBarWidth(res.availableSeats, res.capacity) }}
-                                                        />
-                                                    </div>
+                                                        {/* Progress Bar */}
+                                                        <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full bg-gradient-to-r transition-all duration-700 ${getCapacityColor(res.availableSeats, res.capacity)}`}
+                                                                style={{ width: getCapacityBarWidth(res.availableSeats, res.capacity) }}
+                                                            />
+                                                        </div>
 
-                                                    <div className="flex justify-between mt-1">
-                                                        <span className="text-[10px] text-white/30">
-                                                            {res.bookedCount != null ? res.bookedCount : 0} booked
-                                                        </span>
-                                                        <span className="text-[10px] text-white/30">
-                                                            of {res.capacity}
-                                                        </span>
+                                                        <div className="flex justify-between mt-1">
+                                                            <span className="text-[10px] text-white/30">
+                                                                {res.bookedCount != null ? res.bookedCount : 0} booked
+                                                            </span>
+                                                            <span className="text-[10px] text-white/30">
+                                                                of {res.capacity}
+                                                            </span>
+                                                        </div>
                                                     </div>
+                                                )}
+
+                                                {/* Occupied Slots for Lecturers/Admins */}
+                                                {(userRole === 'LECTURER' || userRole === 'ADMIN') && occupiedSlots.filter(s => s.resourceId === res.id).length > 0 && (
+                                                    <div className="mb-5 p-4 bg-red-500/5 border border-red-500/10 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-500">
+                                                        <h4 className="text-[10px] font-bold text-red-300 uppercase tracking-widest mb-3 flex items-center">
+                                                            <Clock3 className="w-3 h-3 mr-1.5" /> Booked Intervals Today
+                                                        </h4>
+                                                        <div className="space-y-2">
+                                                            {occupiedSlots.filter(s => s.resourceId === res.id).map((slot, idx) => (
+                                                                <div key={idx} className="flex items-center justify-between">
+                                                                    <p className="text-xs text-white/80 font-medium">
+                                                                        {slot.dayOfWeek.charAt(0) + slot.dayOfWeek.slice(1).toLowerCase()}
+                                                                    </p>
+                                                                    <p className="text-xs text-red-300/80 font-mono">
+                                                                        {new Date(slot.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(slot.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => navigate(`/book/${res.id}`)}
+                                                        disabled={res.status !== 'ACTIVE' || (userRole === 'USER' && full)}
+                                                        className={`flex-1 py-3 text-white text-sm font-bold rounded-xl transition-all shadow-lg ${
+                                                            (res.status !== 'ACTIVE' || (userRole === 'USER' && full))
+                                                                ? 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'
+                                                                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 group-hover:shadow-blue-500/40'
+                                                        }`}
+                                                    >
+                                                        {full && userRole === 'USER' ? 'No Seats Available' : res.status !== 'ACTIVE' ? 'Unavailable' : 'Book Now'}
+                                                    </button>
+                                                    
+                                                    {userRole === 'LECTURER' && (
+                                                        <button
+                                                            onClick={() => handleViewSchedule(res)}
+                                                            className="px-4 py-3 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-blue-500/50 rounded-xl text-blue-400 transition-all flex items-center justify-center group/btn"
+                                                            title="View Full Schedule"
+                                                        >
+                                                            <Calendar className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                                                        </button>
+                                                    )}
                                                 </div>
-
-                                                <button
-                                                    onClick={() => navigate(`/book/${res.id}`)}
-                                                    disabled={isDisabled}
-                                                    className={`w-full py-3 text-white text-sm font-bold rounded-xl transition-all shadow-lg ${
-                                                        isDisabled
-                                                            ? 'bg-white/10 text-white/30 cursor-not-allowed shadow-none'
-                                                            : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/20 group-hover:shadow-blue-500/40'
-                                                    }`}
-                                                >
-                                                    {full ? 'No Seats Available' : res.status !== 'ACTIVE' ? 'Unavailable' : 'Book This Resource'}
-                                                </button>
                                             </div>
                                         </div>
                                     );
@@ -458,6 +577,104 @@ const ResourceListPage = () => {
                     )}
                 </div>
             </main>
+
+            {/* Schedule Modal */}
+            {showScheduleModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div 
+                       className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                       onClick={() => setShowScheduleModal(false)}
+                    ></div>
+                    
+                    <div className="relative w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
+                            <div>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-blue-400" />
+                                    Schedule for {selectedResource?.name}
+                                </h3>
+                                <p className="text-xs text-white/40 mt-1">Showing bookings for the next 7 days</p>
+                            </div>
+                            <button 
+                               onClick={() => setShowScheduleModal(false)}
+                               className="p-2 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-colors"
+                            >
+                                <XCircle className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            {fetchingSchedule ? (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                    <p className="text-white/40 text-sm">Fetching resource schedule...</p>
+                                </div>
+                            ) : fullSchedule.length === 0 ? (
+                                <div className="text-center py-12 px-6">
+                                    <div className="w-16 h-16 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                        <Clock3 className="w-8 h-8 text-blue-400/40" />
+                                    </div>
+                                    <h4 className="text-white font-semibold mb-1">No Bookings Found</h4>
+                                    <p className="text-white/40 text-sm">This resource is completely free for the next 7 days.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {/* Group by Day */}
+                                    {Array.from(new Set(fullSchedule.map(s => {
+                                        const dt = s.startTime;
+                                        return typeof dt === 'string' ? dt.split('T')[0] : new Date(dt).toISOString().split('T')[0];
+                                    }))).sort().map(dateStr => (
+                                        <div key={dateStr} className="space-y-2">
+                                            <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest pl-2">
+                                                {new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                            </h4>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {fullSchedule
+                                                   .filter(s => {
+                                                       const dt = s.startTime;
+                                                       const sDate = typeof dt === 'string' ? dt.split('T')[0] : new Date(dt).toISOString().split('T')[0];
+                                                       return sDate === dateStr;
+                                                   })
+                                                   .sort((a,b) => new Date(a.startTime) - new Date(b.startTime))
+                                                   .map((slot, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/[0.07] transition-colors group">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                                                                <Clock className="w-5 h-5 text-blue-400" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-bold text-white font-mono">
+                                                                    {new Date(slot.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(slot.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                </p>
+                                                                <p className="text-[10px] text-white/40 font-medium">{slot.userEmail}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="px-3 py-1 bg-red-400/10 border border-red-400/20 rounded-full">
+                                                            <span className="text-[10px] font-bold text-red-400 uppercase">Occupied</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 bg-white/5 border-t border-white/10 flex justify-end">
+                            <button
+                               onClick={() => navigate(`/book/${selectedResource?.id}`)}
+                               className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+                            >
+                                <Send className="w-4 h-4" /> Book Available Slot
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Footer />
         </div>

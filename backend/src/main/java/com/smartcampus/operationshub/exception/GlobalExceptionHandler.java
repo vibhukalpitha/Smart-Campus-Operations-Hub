@@ -46,4 +46,12 @@ public class GlobalExceptionHandler {
         error.put("error", ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(BookingConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleBookingConflictException(BookingConflictException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        error.put("suggestions", ex.getSuggestions());
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+    }
 }
