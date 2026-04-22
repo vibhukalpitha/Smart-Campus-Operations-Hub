@@ -9,6 +9,7 @@ import com.smartcampus.operationshub.exception.ResourceNotFoundException;
 import com.smartcampus.operationshub.repository.BookingRepository;
 import com.smartcampus.operationshub.repository.ResourceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,18 @@ public class ResourceService {
                 .status(request.getStatus() != null ? request.getStatus() : ResourceStatus.ACTIVE)
                 .availableFrom(request.getAvailableFrom())
                 .availableTo(request.getAvailableTo())
+                // Public Computers
+                .deviceBrand(request.getDeviceBrand())
+                .processor(request.getProcessor())
+                .ramCapacity(request.getRamCapacity())
+                .networkAccess(request.getNetworkAccess())
+                // Cricket
+                .bats(request.getBats())
+                .balls(request.getBalls())
+                .stumps(request.getStumps())
+                // Badminton
+                .rackets(request.getRackets())
+                .shuttlecocks(request.getShuttlecocks())
                 .build();
 
         Resource savedResource = resourceRepository.save(resource);
@@ -100,25 +113,41 @@ public class ResourceService {
         resource.setType(request.getType());
         resource.setCapacity(request.getCapacity());
         resource.setLocation(request.getLocation());
-        
+
         if (request.getStatus() != null) {
             resource.setStatus(request.getStatus());
         }
-        
+
         resource.setAvailableFrom(request.getAvailableFrom());
         resource.setAvailableTo(request.getAvailableTo());
+
+        // Public Computers metadata
+        resource.setDeviceBrand(request.getDeviceBrand());
+        resource.setProcessor(request.getProcessor());
+        resource.setRamCapacity(request.getRamCapacity());
+        resource.setNetworkAccess(request.getNetworkAccess());
+
+        // Cricket metadata
+        resource.setBats(request.getBats());
+        resource.setBalls(request.getBalls());
+        resource.setStumps(request.getStumps());
+
+        // Badminton metadata
+        resource.setRackets(request.getRackets());
+        resource.setShuttlecocks(request.getShuttlecocks());
 
         Resource updatedResource = resourceRepository.save(resource);
         return mapToDTO(updatedResource);
     }
 
     /**
-     * Delete a resource
+     * Delete a resource (and its associated bookings to satisfy FK constraint).
      */
     public void deleteResource(Long id) {
         if (!resourceRepository.existsById(id)) {
             throw new ResourceNotFoundException("Resource not found with ID: " + id);
         }
+        bookingRepository.deleteAllByResourceId(id);
         resourceRepository.deleteById(id);
     }
 
@@ -183,6 +212,18 @@ public class ResourceService {
                 .createdAt(resource.getCreatedAt())
                 .bookedCount((int) booked)
                 .availableSeats(available)
+                // Public Computers
+                .deviceBrand(resource.getDeviceBrand())
+                .processor(resource.getProcessor())
+                .ramCapacity(resource.getRamCapacity())
+                .networkAccess(resource.getNetworkAccess())
+                // Cricket
+                .bats(resource.getBats())
+                .balls(resource.getBalls())
+                .stumps(resource.getStumps())
+                // Badminton
+                .rackets(resource.getRackets())
+                .shuttlecocks(resource.getShuttlecocks())
                 .build();
     }
 }
