@@ -35,6 +35,7 @@ const BookingFormPage = () => {
     const [batsCount, setBatsCount] = useState(0);
     const [ballsCount, setBallsCount] = useState(0);
     const [stumpsCount, setStumpsCount] = useState(0);
+    const [itemCount, setItemCount] = useState(1);
 
     useEffect(() => {
         const userStr = localStorage.getItem('user');
@@ -98,6 +99,8 @@ const BookingFormPage = () => {
         let finalPurpose = purpose;
         if (resource.type === 'CRICKET') {
             finalPurpose += `\n\nSports Gear Required: ${batsCount} Bats, ${ballsCount} Balls, ${stumpsCount} Stumps`;
+        } else if (['PROJECTOR', 'CAMERA', 'SMART_BOARD'].includes(resource.type)) {
+            finalPurpose += `\n\nRequested Quantity: ${itemCount} Unit(s)`;
         } else if (selectedEquipment.length > 0) {
             finalPurpose += `\n\nRequested Additional Equipment: ${selectedEquipment.join(', ')}`;
         }
@@ -231,7 +234,8 @@ const BookingFormPage = () => {
                             )}
 
                             <form onSubmit={handleSubmit} className="space-y-8">
-                                {user?.role === 'USER' ? (
+                                {/* Booking Inputs Choice based on Role and Resource Type */}
+                                {user?.role === 'USER' && !['CRICKET', 'BADMINTON', 'SPORT'].includes(resource.type) ? (
                                     <div className="space-y-4">
                                         <label className="text-sm font-semibold text-white/70 flex items-center">
                                             <Calendar className="w-4 h-4 mr-2 text-indigo-400" /> Available Lecture Sessions
@@ -366,8 +370,8 @@ const BookingFormPage = () => {
                                     ></textarea>
                                 </div>
 
-                                {/* Equipment (Lecturer Only) - HIDE FOR CRICKET */}
-                                {(user?.role === 'LECTURER' && resource.type !== 'CRICKET') && (
+                                {/* Equipment (Lecturer Only) - HIDE FOR CRICKET AND EQUIPMENT TYPES */}
+                                {(user?.role === 'LECTURER' && !['CRICKET', 'PROJECTOR', 'CAMERA', 'SMART_BOARD'].includes(resource.type)) && (
                                     <div className="space-y-3">
                                         <label className="text-sm font-semibold text-white/70 flex items-center">
                                             <Wrench className="w-4 h-4 mr-2 text-indigo-400" /> Additional Requirements
@@ -392,6 +396,27 @@ const BookingFormPage = () => {
                                             ))}
                                         </div>
                                     </div>
+                                )}
+
+                                {/* Technical Equipment Quantity (PROJECTOR, CAMERA, etc.) */}
+                                {['PROJECTOR', 'CAMERA', 'SMART_BOARD'].includes(resource.type) && (
+                                     <div className="space-y-2">
+                                         <label className="text-sm font-semibold text-white/70 flex items-center justify-between">
+                                             <div className="flex items-center">
+                                                 <Wrench className="w-4 h-4 mr-2 text-indigo-400" /> Quantity Required
+                                             </div>
+                                         </label>
+                                         <input 
+                                             type="number"
+                                             required
+                                             min="1"
+                                             max={resource.capacity}
+                                             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                             value={itemCount}
+                                             onChange={(e) => setItemCount(e.target.value)}
+                                         />
+                                         <p className="text-[10px] text-white/30 italic">Available: {resource.capacity} units total</p>
+                                     </div>
                                 )}
 
                                 {/* Sports Gear (CRICKET ONLY) */}

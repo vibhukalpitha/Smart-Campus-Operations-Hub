@@ -156,6 +156,9 @@ const ResourceTypeCatalogPage = () => {
         if (cat.key === 'SPORT') {
             return userRole === 'USER'; // Only show to students/users
         }
+        if (cat.key === 'EQUIPMENT') {
+            return userRole !== 'USER'; // Hide for students, show for staff
+        }
         return true;
     });
 
