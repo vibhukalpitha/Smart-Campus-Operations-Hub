@@ -24,4 +24,20 @@ public class ResourceDTO {
     private LocalDateTime createdAt;
     private Integer bookedCount;
     private Integer availableSeats;
+
+    // ── Public Computers metadata ────────────────────────────────────────
+    private String deviceBrand;
+    private String processor;
+    private String ramCapacity;
+    private String networkAccess;
+
+    // ── Cricket metadata ─────────────────────────────────────────────────
+    private Integer bats;
+    private Integer balls;
+    private Integer stumps;
+
+    // ── Badminton metadata ───────────────────────────────────────────────
+    private Integer rackets;
+    private Integer shuttlecocks;
 }
+

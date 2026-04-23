@@ -12,6 +12,9 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean existsByResourceId(Long resourceId);
 
+    // Used by ResourceService to cascade-delete before removing a resource
+    void deleteAllByResourceId(Long resourceId);
+
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     List<Booking> findAllByOrderByCreatedAtDesc();
