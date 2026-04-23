@@ -17,6 +17,9 @@ import AdminBookingsPage from './pages/AdminBookingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomeRedirect from './components/HomeRedirect';
 import AiChatBot from './components/AiChatBot';
+import ContactUsPage from './pages/ContactUsPage';
+import CommunityPage from './pages/CommunityPage';
+import SchedulesPage from './pages/SchedulesPage';
 
 // Ticketing Module
 import CreateTicketPage from './pages/ticketing/CreateTicketPage';
@@ -38,10 +41,13 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/contact-us" element={<ContactUsPage />} />
           
           {/* Protected User Routes */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+          <Route path="/schedules" element={<ProtectedRoute><SchedulesPage /></ProtectedRoute>} />
           <Route path="/resources/catalog" element={<ResourceTypeCatalogPage />} />
           <Route path="/resources" element={<Navigate to="/resources/catalog" replace />} />
           <Route path="/resources/type/:type" element={<ResourceListPage />} />

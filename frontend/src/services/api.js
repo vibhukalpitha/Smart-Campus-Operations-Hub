@@ -160,4 +160,8 @@ export const aiService = {
     chat: (message) => api.post('/ai/chat', { message })
 };
 
+export const contactService = {
+    send: (data) => api.post('/contact/send', data)
+};
+
 export default api;
