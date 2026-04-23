@@ -52,8 +52,6 @@ const AiChatBot = () => {
         }
     };
 
-    if (!isAuthenticated) return null;
-
     if (!isOpen) {
         return (
             <button 

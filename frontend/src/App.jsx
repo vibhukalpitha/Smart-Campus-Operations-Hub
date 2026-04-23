@@ -132,7 +132,7 @@ function App() {
             }
           />
         </Routes>
-        {localStorage.getItem('token') && <AiChatBot />}
+        <AiChatBot />
       </div>
     </Router>
   );

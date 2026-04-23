@@ -23,9 +23,19 @@ const CommunityPage = () => {
         fetchUsers();
     }, []);
 
-    const admins = users.filter(u => u.role === 'ADMIN');
-    const lecturers = users.filter(u => u.role === 'LECTURER');
-    const technicians = users.filter(u => u.role === 'TECHNICIAN');
+    const syntheticUsers = [
+        { id: 's1', firstName: 'Alexander', lastName: 'Wright', role: 'ADMIN', email: 'admin.wright@edunexus.edu', customPic: 'https://i.pravatar.cc/150?u=alexander' },
+        { id: 's2', firstName: 'Dr. Emily', lastName: 'Carter', role: 'LECTURER', email: 'emily.carter@edunexus.edu', customPic: 'https://i.pravatar.cc/150?u=emily' },
+        { id: 's3', firstName: 'Prof. Michael', lastName: 'Dawson', role: 'LECTURER', email: 'm.dawson@edunexus.edu', customPic: 'https://i.pravatar.cc/150?u=michael' },
+        { id: 's4', firstName: 'Marcus', lastName: 'Chen', role: 'TECHNICIAN', email: 'marcus.tch@edunexus.edu', customPic: 'https://i.pravatar.cc/150?u=marcus' },
+        { id: 's5', firstName: 'Sophia', lastName: 'Martinez', role: 'TECHNICIAN', email: 'sophia.m@edunexus.edu', customPic: 'https://i.pravatar.cc/150?u=sophia' }
+    ];
+
+    const displayUsers = [...syntheticUsers, ...users];
+
+    const admins = displayUsers.filter(u => u.role === 'ADMIN');
+    const lecturers = displayUsers.filter(u => u.role === 'LECTURER');
+    const technicians = displayUsers.filter(u => u.role === 'TECHNICIAN');
 
     const filteredUsers = (list) => {
         if (!searchQuery) return list;
@@ -34,6 +44,7 @@ const CommunityPage = () => {
             u.email.toLowerCase().includes(searchQuery.toLowerCase())
         );
     };
+
 
     return (
         <div className="min-h-screen bg-[#0a0f1c] text-white flex flex-col font-sans">
@@ -158,7 +169,9 @@ const UserCard = ({ user, color }) => {
         <div className={`bg-white/5 border rounded-3xl p-6 transition-all duration-300 group ${colorClasses[color]}`}>
             <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-white/5 group-hover:ring-offset-2 group-hover:ring-offset-[#0a0f1c] transition-all bg-gradient-to-br from-white/10 to-transparent">
-                    {user.profilePicture ? (
+                    {user.customPic ? (
+                        <img src={user.customPic} alt="" className="w-full h-full object-cover" />
+                    ) : user.profilePicture ? (
                         <img src={`http://localhost:8080/uploads/profile-pictures/${user.profilePicture}`} alt="" className="w-full h-full object-cover" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-xl font-bold opacity-30">
@@ -171,6 +184,7 @@ const UserCard = ({ user, color }) => {
                     <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${textClasses[color]}`}>{user.role}</p>
                 </div>
             </div>
+
             
             <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-xs text-white/40">
