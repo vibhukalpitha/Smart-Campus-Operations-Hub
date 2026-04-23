@@ -187,11 +187,13 @@ const LoginPage = () => {
                     
                     {/* Header */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 mb-6 transform hover:rotate-[360deg] transition-transform duration-700">
-                            <Sparkles className="w-8 h-8 text-white" />
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white shadow-xl shadow-blue-500/30 mb-6 transform hover:rotate-6 transition-transform duration-500 overflow-hidden p-2">
+                            <div className="w-full h-full rounded-xl overflow-hidden bg-white shadow-lg shadow-purple-500/20">
+                                <img src="/assets/edunexus-logo.png" alt="EduNexus" className="w-full h-full object-contain p-1" />
+                            </div>
                         </div>
-                        <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200 tracking-tight">
-                            {isLogin ? 'Welcome Back' : 'Join Us Today'}
+                        <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200 tracking-tight">
+                            EduNexus
                         </h2>
                         <p className="mt-3 text-sm text-blue-100/70 font-light tracking-wide">
                             {isLogin ? 'Enter your details to access your account' : 'Create an account to unlock all features'}

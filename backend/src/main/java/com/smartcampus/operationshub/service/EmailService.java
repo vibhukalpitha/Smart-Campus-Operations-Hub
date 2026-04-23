@@ -49,6 +49,13 @@ public class EmailService {
         sendSafeMail(to, subject, "Hello, your Smart Campus Hub profile details or password were just updated.");
     }
 
+    public void sendContactEmail(String fromEmail, String name, String message) {
+        String subject = "EduNexus Contact Form: Message from " + name;
+        String body = "Name: " + name + "\nEmail: " + fromEmail + "\n\nMessage:\n" + message;
+        // Sending to support email
+        sendSafeMail("kalpithawanigasinhe@gmail.com", subject, body);
+    }
+
     private void sendSafeMail(String to, String subject, String text) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();

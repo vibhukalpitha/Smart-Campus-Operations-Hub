@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import NotificationPanel from '../components/NotificationPanel';
+import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { LayoutDashboard, Users, Calendar, Settings, LogOut, Search, Bell, ArrowRight, Package, Clock, Shield } from 'lucide-react';
 
 const Dashboard = () => {
     const [user, setUser] = useState(null);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -41,87 +42,54 @@ const Dashboard = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#0a0f1c] text-white flex overflow-hidden font-sans relative">
-            {/* Animated Background Gradients */}
+        <div className="min-h-screen bg-[#0a0f1c] text-white flex flex-col overflow-hidden font-sans relative">
+            {/* Background Gradients */}
             <div className="absolute top-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-blue-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
             <div className="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-indigo-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
 
-            {/* Sidebar */}
-            <aside className="w-64 hidden lg:flex flex-col bg-white/5 backdrop-blur-2xl border-r border-white/10 z-10 transition-all">
-                <div className="p-6 flex items-center space-x-3 border-b border-white/5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <LayoutDashboard className="text-white w-6 h-6" />
-                    </div>
-                    <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-100 to-indigo-200 tracking-tight">Smart Campus</h1>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-                    <p className="px-4 text-xs font-semibold text-indigo-300/50 uppercase tracking-wider mb-2">Main Menu</p>
-                    
-                    <a href="#" className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 transition-all">
-                        <LayoutDashboard className="w-5 h-5" />
-                        <span className="font-medium">Overview</span>
-                    </a>
-                    
-                    <a href="#" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-indigo-200/70 hover:bg-white/5 hover:text-white transition-all group">
-                        <Users className="w-5 h-5 group-hover:text-indigo-400 transition-colors" />
-                        <span className="font-medium">Community</span>
-                    </a>
-                    
-                    <a href="#" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-indigo-200/70 hover:bg-white/5 hover:text-white transition-all group">
-                        <Calendar className="w-5 h-5 group-hover:text-indigo-400 transition-colors" />
-                        <span className="font-medium">Schedules</span>
-                    </a>
-                </div>
+            <Header 
+                showMenuButton={true} 
+                onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+                isSidebarOpen={sidebarOpen}
+            />
 
-                <div className="p-4 border-t border-white/5">
-                    <button 
-                        onClick={handleLogout}
-                        className="flex items-center space-x-3 w-full px-4 py-3 rounded-xl text-red-300 hover:bg-red-500/10 hover:text-red-200 transition-all group"
-                    >
-                        <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-medium">Sign Out</span>
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col h-screen overflow-hidden z-10">
-                {/* Topbar */}
-                <header className="h-20 bg-white/5 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-8 relative z-50">
-                    <div className="flex items-center bg-white/5 rounded-full px-4 py-2 border border-white/5 w-96 focus-within:bg-white/10 focus-within:border-indigo-500/50 transition-all">
-                        <Search className="w-5 h-5 text-indigo-200/50" />
-                        <input 
-                            type="text" 
-                            placeholder="Search modules, events, members..." 
-                            className="bg-transparent border-none outline-none ml-3 text-sm text-white placeholder-indigo-200/40 w-full"
-                        />
-                    </div>
-
-                    <div className="flex items-center space-x-6">
-                        <div className="relative">
-                            <NotificationPanel />
+            <div className="flex-1 flex overflow-hidden">
+                {/* Sidebar */}
+                <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} flex flex-col bg-white/5 backdrop-blur-2xl border-r border-white/10 z-10 transition-all duration-300 overflow-hidden shrink-0`}>
+                    <div className="w-64 flex flex-col h-full">
+                        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+                            <p className="px-4 text-xs font-semibold text-indigo-300/50 uppercase tracking-wider mb-2">Main Menu</p>
+                            
+                            <Link to="/dashboard" className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 transition-all">
+                                <LayoutDashboard className="w-5 h-5" />
+                                <span className="font-medium">Overview</span>
+                            </Link>
+                            
+                            <Link to="/community" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-indigo-200/70 hover:bg-white/5 hover:text-white transition-all group">
+                                <Users className="w-5 h-5 group-hover:text-indigo-400 transition-colors" />
+                                <span className="font-medium">Community</span>
+                            </Link>
+                            
+                            <Link to="/schedules" className="flex items-center space-x-3 px-4 py-3 rounded-xl text-indigo-200/70 hover:bg-white/5 hover:text-white transition-all group">
+                                <Calendar className="w-5 h-5 group-hover:text-indigo-400 transition-colors" />
+                                <span className="font-medium">Schedules</span>
+                            </Link>
                         </div>
-                        
-                        <div className="h-8 w-px bg-white/10"></div>
-                        
-                        <Link to="/profile" className="flex items-center space-x-3 cursor-pointer group">
-                            <div className="text-right hidden md:block">
-                                <p className="text-sm font-semibold text-white group-hover:text-indigo-200 transition-colors">{user.firstName} {user.lastName}</p>
-                                <p className="text-xs text-indigo-300/70 capitalize">{user.role}</p>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-indigo-500/20 overflow-hidden relative">
-                                {user.profilePicture ? (
-                                    <img src={`http://localhost:8080/uploads/profile-pictures/${user.profilePicture}`} alt="Avatar" className="w-full h-full rounded-full object-cover relative z-10" />
-                                ) : (
-                                    <div className="w-full h-full bg-[#0a0f1c] rounded-full flex items-center justify-center text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
-                                        {user.firstName?.[0] || 'U'}{user.lastName?.[0] || ''}
-                                    </div>
-                                )}
-                            </div>
-                        </Link>
+
+                        <div className="p-4 border-t border-white/5">
+                            <button 
+                                onClick={handleLogout}
+                                className="flex items-center space-x-3 w-full px-4 py-3 rounded-xl text-red-300 hover:bg-red-500/10 hover:text-red-200 transition-all group"
+                            >
+                                <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                                <span className="font-medium">Sign Out</span>
+                            </button>
+                        </div>
                     </div>
-                </header>
+                </aside>
+
+                {/* Main Content */}
+            <main className="flex-1 flex flex-col h-full overflow-hidden z-10">
 
                 {/* Dashboard Area */}
                 <div className="flex-1 overflow-y-auto p-8">
@@ -225,6 +193,7 @@ const Dashboard = () => {
                     </div>
                 </div>
             </main>
+            </div>
         </div>
     );
 };
