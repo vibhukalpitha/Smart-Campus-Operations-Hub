@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { LayoutDashboard, Users, Calendar, Settings, LogOut, Search, Bell, ArrowRight, Package, Clock, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Settings, LogOut, Search, Bell, ArrowRight, Package, Clock, Shield, Sparkles, Zap } from 'lucide-react';
 
 const Dashboard = () => {
     const [user, setUser] = useState(null);
@@ -92,103 +92,143 @@ const Dashboard = () => {
             <main className="flex-1 flex flex-col h-full overflow-hidden z-10">
 
                 {/* Dashboard Area */}
-                <div className="flex-1 overflow-y-auto p-8">
-                    <div className="max-w-6xl mx-auto space-y-8">
-                        <div>
-                            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200">
-                                Welcome back, {user.firstName}! 👋
-                            </h2>
-                            <p className="mt-2 text-indigo-200/70">Here's what's happening on campus today.</p>
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
+                    {/* Decorative Mesh Gradient Blur */}
+                    <div className="fixed top-[20%] left-[30%] w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
+                    <div className="fixed bottom-[10%] right-[10%] w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse delay-1000"></div>
+
+                    <div className="max-w-7xl mx-auto space-y-12 relative z-10">
+                        {/* Hero Header Section */}
+                        <div className="relative p-6 md:p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl overflow-hidden group">
+                            <div className="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-700"></div>
+                            <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-700"></div>
+                            
+                            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                <div>
+                                    <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-300 uppercase tracking-[0.2em] mb-4">
+                                        <Sparkles className="w-3 h-3 mr-2" /> Campus Intelligence Hub
+                                    </span>
+                                    <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-2 leading-tight">
+                                        Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-200">{user.firstName}</span>!
+                                    </h2>
+                                    <p className="text-indigo-200/60 max-w-2xl text-sm leading-relaxed">
+                                        Your personal gateway to campus resources, real-time analytics, and operational tools is fully active.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         
-                        {/* Stats / Widgets Row */}
+                        {/* Strategic Overview Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300">
-                                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <Users className="w-16 h-16 text-indigo-400" />
+                            {/* Role Card */}
+                            <div className="group relative bg-white/5 border border-white/10 p-6 rounded-2xl overflow-hidden transition-all duration-300 hover:border-indigo-500/40 hover:bg-white/10 shadow-lg">
+                                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 group-hover:rotate-12 transition-all duration-500">
+                                    <Users className="w-16 h-16 text-white" />
                                 </div>
-                                <h3 className="text-indigo-200/50 text-sm font-semibold uppercase tracking-wider">Your Role Status</h3>
-                                <p className="text-3xl font-bold mt-2 text-white capitalize">{user.role}</p>
-                                <p className="text-sm text-emerald-400 mt-2 flex items-center">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
-                                    System configured
-                                </p>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                                        <Users className="text-indigo-400 w-5 h-5" />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></div>
+                                        <span className="text-xs font-bold text-emerald-400">Active</span>
+                                    </div>
+                                </div>
+                                <h3 className="text-indigo-200/40 text-[10px] font-black uppercase tracking-widest">Access Tier</h3>
+                                <p className="text-2xl font-black mt-1 text-white capitalize tracking-tight">{user.role}</p>
                             </div>
                             
-                            <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl relative overflow-hidden group hover:border-blue-500/30 transition-all duration-300">
-                                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <Calendar className="w-16 h-16 text-blue-400" />
+                            {/* Events Card */}
+                            <div className="group relative bg-white/5 border border-white/10 p-6 rounded-2xl overflow-hidden transition-all duration-300 hover:border-blue-500/40 hover:bg-white/10 shadow-lg">
+                                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 group-hover:scale-110 transition-all duration-500">
+                                    <Calendar className="w-16 h-16 text-white" />
                                 </div>
-                                <h3 className="text-indigo-200/50 text-sm font-semibold uppercase tracking-wider">Upcoming Events</h3>
-                                <p className="text-3xl font-bold mt-2 text-white">0 Moduels</p>
-                                <p className="text-sm text-blue-300/70 mt-2">Ready to be integrated</p>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                                        <Calendar className="text-blue-400 w-5 h-5" />
+                                    </div>
+                                </div>
+                                <h3 className="text-blue-200/40 text-[10px] font-black uppercase tracking-widest">Pending Items</h3>
+                                <p className="text-2xl font-black mt-1 text-white tracking-tight">0 Modules</p>
                             </div>
 
-                            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 rounded-3xl relative overflow-hidden shadow-xl shadow-indigo-500/20 group hover:shadow-indigo-500/40 transition-all duration-300 flex flex-col justify-end">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-                                <h3 className="text-white/80 text-sm font-semibold uppercase tracking-wider mb-2">System Analytics</h3>
-                                <p className="text-xl font-bold text-white">All systems operational.</p>
-                                <p className="text-sm text-indigo-100/70 mt-1">Campus Hub is running smoothly.</p>
+                            {/* Analytics Card */}
+                            <div className="group relative bg-gradient-to-br from-blue-600 to-indigo-700 border border-white/20 p-6 rounded-2xl overflow-hidden transition-all duration-300 shadow-xl shadow-indigo-500/20">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16 group-hover:bg-white/20 transition-all duration-700"></div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/30">
+                                        <Zap className="text-white w-5 h-5 animate-pulse" />
+                                    </div>
+                                    <span className="text-xs font-bold text-white/90">24ms</span>
+                                </div>
+                                <h3 className="text-white/60 text-[10px] font-black uppercase tracking-widest">Health Status</h3>
+                                <p className="text-2xl font-black mt-1 text-white tracking-tight">Operational</p>
                             </div>
                         </div>
 
-                        {/* Recent Activity Section */}
-                        <div className="space-y-6">
-                            <h3 className="text-lg font-semibold text-white">Quick Access Modules</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {/* Book a Resource */}
+                        {/* Quick Access Modules Navigation */}
+                        <div className="space-y-8">
+                            <div className="flex items-center space-x-4">
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                                <h3 className="text-sm font-black text-indigo-300/50 uppercase tracking-[0.3em]">Core Operations</h3>
+                                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {/* Resource Hub Card */}
                                 <div 
                                     onClick={() => navigate('/resources/catalog')}
-                                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group cursor-pointer relative overflow-hidden"
+                                    className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 cursor-pointer overflow-hidden transition-all duration-300 hover:bg-white/10 hover:border-blue-500/40 shadow-lg"
                                 >
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-bl-full group-hover:bg-blue-500/20 transition-all duration-500"></div>
-                                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                        <Package className="text-blue-400 w-8 h-8" />
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform duration-300">
+                                            <Package className="text-blue-400 w-6 h-6" />
+                                        </div>
+                                        <ArrowRight className="w-5 h-5 text-blue-400 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Resource Hub</h3>
-                                    <p className="text-white/40 text-sm leading-relaxed mb-6">Browse and request campus facilities, laboratories, and common areas.</p>
-                                    <div className="flex items-center text-blue-400 font-bold text-sm">
-                                        Explore Catalog <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                                    </div>
+                                    <h3 className="text-lg font-bold text-white mb-2">Resource Hub</h3>
+                                    <p className="text-indigo-200/50 text-xs leading-relaxed font-medium">
+                                        Unlock access to laboratories, lecture halls, and premium equipment for your academic needs.
+                                    </p>
                                 </div>
 
-                                {/* My Bookings */}
+                                {/* My Bookings Card */}
                                 <div 
                                     onClick={() => navigate('/my-bookings')}
-                                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group cursor-pointer relative overflow-hidden"
+                                    className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 cursor-pointer overflow-hidden transition-all duration-300 hover:bg-white/10 hover:border-purple-500/40 shadow-lg"
                                 >
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-bl-full group-hover:bg-purple-500/20 transition-all duration-500"></div>
-                                    <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                        <Clock className="text-purple-400 w-8 h-8" />
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform duration-300">
+                                            <Clock className="text-purple-400 w-6 h-6" />
+                                        </div>
+                                        <ArrowRight className="w-5 h-5 text-purple-400 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">My Bookings</h3>
-                                    <p className="text-white/40 text-sm leading-relaxed mb-6">Track your active requests, view approvals, or cancel your upcoming bookings.</p>
-                                    <div className="flex items-center text-purple-400 font-bold text-sm">
-                                        Manage Requests <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                                    </div>
+                                    <h3 className="text-lg font-bold text-white mb-2">My Agenda</h3>
+                                    <p className="text-indigo-200/50 text-xs leading-relaxed font-medium">
+                                        Monitor your active reservations, verify approvals, and manage your personal schedule in one place.
+                                    </p>
                                 </div>
 
-                                {/* Support / Ticketing */}
+                                {/* Service Hub Card */}
                                 <div 
                                     onClick={() => navigate('/tickets')}
-                                    className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all group cursor-pointer relative overflow-hidden"
+                                    className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 cursor-pointer overflow-hidden transition-all duration-300 hover:bg-white/10 hover:border-indigo-500/40 shadow-lg"
                                 >
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-bl-full group-hover:bg-indigo-500/20 transition-all duration-500"></div>
-                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                                        <Shield className="text-indigo-400 w-8 h-8" />
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 group-hover:scale-110 transition-transform duration-300">
+                                            <Shield className="text-indigo-400 w-6 h-6" />
+                                        </div>
+                                        <ArrowRight className="w-5 h-5 text-indigo-400 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Service Hub</h3>
-                                    <p className="text-white/40 text-sm leading-relaxed mb-6">
-                                        {user?.role === 'USER' ? 'Log maintenance requests and report campus issues directly to our team.' : 'Manage, track, and update all campus maintenance requests and issues.'}
+                                    <h3 className="text-lg font-bold text-white mb-2">Service Hub</h3>
+                                    <p className="text-indigo-200/50 text-xs leading-relaxed font-medium">
+                                        {user?.role === 'USER' ? 'Resolve technical hurdles and report maintenance issues directly to our operations team.' : 'Orchestrate and resolve all incoming campus service requests and maintenance tickets.'}
                                     </p>
-                                    <div className="flex items-center text-indigo-400 font-bold text-sm">
-                                        {user?.role === 'USER' ? 'Open Ticket' : 'Manage Tickets'} <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 mt-8">
                         <Footer />
                     </div>
                 </div>
