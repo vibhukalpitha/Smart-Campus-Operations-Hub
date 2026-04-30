@@ -79,7 +79,10 @@ public class AiService {
             return "I encountered an error connecting to my AI core. Status: " + response.getStatusCode();
         } catch (org.springframework.web.client.HttpClientErrorException e) {
             System.err.println("OpenAI Client Error: " + e.getResponseBodyAsString());
-            return "AI Error: " + e.getResponseBodyAsString();
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                return "My AI services are currently offline due to an invalid or expired API key. Please ask the administrator to update the API key.";
+            }
+            return "AI Error: " + e.getStatusCode();
         } catch (Exception e) {
             e.printStackTrace();
             return "My AI services are currently unavailable. Error: " + e.getMessage();
